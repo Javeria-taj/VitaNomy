@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VitaNomy — AI Health Chat</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cr:#F8F5EE;--cr2:#EDE7D8;--cr3:#E4DDD0;
+  --em:#1B5E3B;--em2:#0D3D26;--em3:#2E7D52;--emp:#E4F0EA;
+  --gd:#C9A84C;--gd2:#E8C86E;--gdp:#F7EDD0;
+  --ink:#0A0F0D;--tx:#1A2520;--mu:#5C7268;--mu2:#8AA090;
+  --red:#C0392B;--redp:#FDECEA;--ora:#E07A5F;
+}
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap');
+
+body{font-family:'Instrument Sans',system-ui,sans-serif;background:#C8C2B2;color:var(--tx);height:100vh;overflow:hidden}
+
+/* ─── BROWSER ─── */
+.pw{max-width:1060px;margin:0 auto;padding:12px;height:100vh;display:flex;flex-direction:column}
+.bc{background:var(--cr2);border:2.5px solid var(--ink);border-radius:12px 12px 0 0;border-bottom:none;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.bds{display:flex;gap:6px}
+.bd{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--ink)}
+.bd:nth-child(1){background:#FF5F56}.bd:nth-child(2){background:#FFBD2E}.bd:nth-child(3){background:#27C93F}
+.bu{flex:1;background:white;border:1.5px solid var(--ink);border-radius:5px;padding:4px 12px;font-size:11px;color:var(--mu);text-align:center;font-family:'DM Mono',monospace}
+.site{border:2.5px solid var(--ink);border-radius:0 0 12px 12px;overflow:hidden;background:var(--cr);box-shadow:8px 8px 0 var(--ink);flex:1;display:flex;flex-direction:column;min-height:0}
+
+/* ─── LANG STRIP ─── */
+.ls{background:var(--em2);padding:5px 22px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.ln{font-size:10px;color:rgba(255,255,255,.38);font-family:'DM Mono',monospace}
+.lbs{display:flex;gap:3px}
+.lb{font-size:10px;padding:3px 8px;border-radius:3px;color:rgba(255,255,255,.5);cursor:pointer;transition:.15s}
+.lb.on{background:var(--gd);color:var(--ink);font-weight:600}
+
+/* ─── NAV ─── */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:10px 22px;border-bottom:2px solid var(--ink);background:var(--cr);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:8px}
+.licon{width:30px;height:30px;background:var(--em);border:2px solid var(--ink);border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 0 var(--ink)}
+.ltxt{font-size:17px;letter-spacing:-.04em;font-family:'DM Serif Display',serif}
+.ltxt b{color:var(--gd);font-weight:400}
+.nav-links{display:flex;gap:4px}
+.nl{font-size:11px;padding:5px 11px;border-radius:5px;color:var(--mu);cursor:pointer;transition:.15s}
+.nl:hover{background:var(--cr2)}
+.nl.active{background:var(--em);color:white;font-weight:600;box-shadow:2px 2px 0 var(--ink);border:1.5px solid var(--ink)}
+.nav-r{display:flex;align-items:center;gap:8px}
+.nav-user{display:flex;align-items:center;gap:7px;border:2px solid var(--ink);border-radius:7px;padding:5px 10px;background:white;box-shadow:2px 2px 0 var(--ink);font-size:11px;font-weight:600;cursor:pointer}
+.nav-avatar{width:20px;height:20px;border-radius:50%;background:var(--em);border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:9px;color:white}
+
+/* ─── MAIN 3-PANEL ─── */
+.main{display:grid;grid-template-columns:200px 1fr 230px;flex:1;min-height:0;overflow:hidden}
+
+/* ─── LEFT SIDEBAR ─── */
+.sidebar-left{border-right:2px solid var(--ink);display:flex;flex-direction:column;background:var(--cr);overflow:hidden}
+
+.sl-head{padding:13px 13px 10px;border-bottom:1.5px solid var(--cr3)}
+.sl-label{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);font-family:'DM Mono',monospace;margin-bottom:8px}
+
+/* gender toggle pill */
+.gender-pill{display:flex;border:2px solid var(--ink);border-radius:8px;overflow:hidden;box-shadow:2px 2px 0 var(--ink);margin-bottom:10px}
+.gp-opt{flex:1;padding:5px 0;text-align:center;font-size:11px;font-weight:600;cursor:pointer;transition:.15s}
+.gp-opt.m.sel{background:var(--em);color:white}
+.gp-opt.f.sel{background:#7B4FA0;color:white}
+.gp-opt:not(.sel){background:white;color:var(--mu)}
+
+/* patient context card */
+.ctx-card{background:white;border:2px solid var(--ink);border-radius:9px;padding:10px;box-shadow:2px 2px 0 var(--ink);margin-bottom:10px}
+.ctx-avatar{width:36px;height:36px;border-radius:50%;border:2px solid var(--ink);margin:0 auto 7px;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative}
+.ctx-name{font-size:12px;font-weight:700;text-align:center;margin-bottom:2px}
+.ctx-meta{font-size:10px;color:var(--mu);text-align:center;margin-bottom:8px;font-family:'DM Mono',monospace}
+.ctx-vitals{display:flex;flex-direction:column;gap:4px}
+.cv{display:flex;justify-content:space-between;align-items:center;font-size:10px}
+.cv-label{color:var(--mu)}
+.cv-val{font-family:'DM Mono',monospace;font-weight:600;font-size:10.5px}
+.cv-val.ok{color:var(--em3)}
+.cv-val.warn{color:var(--ora)}
+
+/* history list */
+.sl-hist{flex:1;overflow-y:auto;padding:10px}
+.hist-item{border:1.5px solid var(--cr3);border-radius:7px;padding:7px 9px;cursor:pointer;margin-bottom:6px;transition:.15s;background:white}
+.hist-item:hover{border-color:var(--em);background:var(--emp)}
+.hist-item.active{border-color:var(--em);background:var(--emp);box-shadow:1.5px 1.5px 0 var(--em)}
+.hi-title{font-size:11px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi-meta{font-size:9.5px;color:var(--mu);font-family:'DM Mono',monospace}
+
+.btn-new-chat{margin:10px;padding:9px;background:var(--em);color:white;border:2px solid var(--ink);border-radius:8px;font-size:11.5px;font-weight:700;box-shadow:2px 2px 0 var(--ink);cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-new-chat:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
+
+/* ─── CHAT CENTRE ─── */
+.chat-area{display:flex;flex-direction:column;min-height:0;overflow:hidden;position:relative}
+
+/* chat header strip */
+.chat-header{padding:10px 16px;border-bottom:2px solid var(--ink);background:var(--cr2);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ch-left{display:flex;align-items:center;gap:9px}
+.ch-avatar{width:32px;height:32px;border-radius:50%;border:2px solid var(--ink);background:var(--em2);display:flex;align-items:center;justify-content:center;position:relative}
+.ch-pulse{position:absolute;bottom:1px;right:1px;width:8px;height:8px;border-radius:50%;background:#27C93F;border:1.5px solid var(--cr2)}
+.ch-name{font-size:13px;font-weight:700}
+.ch-sub{font-size:10px;color:var(--mu);margin-top:1px;font-family:'DM Mono',monospace}
+.ch-right{display:flex;align-items:center;gap:6px}
+.ch-badge{display:flex;align-items:center;gap:5px;background:var(--emp);border:1.5px solid var(--em);border-radius:6px;padding:4px 9px;font-size:10px;font-weight:600;color:var(--em)}
+.ch-gender-badge{border-radius:6px;padding:4px 9px;font-size:10px;font-weight:700;border:1.5px solid var(--ink)}
+.ch-gender-badge.m{background:var(--emp);color:var(--em);border-color:var(--em)}
+.ch-gender-badge.f{background:#F5EEFF;color:#7B4FA0;border-color:#7B4FA0}
+.ch-dot-live{width:6px;height:6px;border-radius:50%;background:#27C93F;animation:blink 1.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* messages container */
+.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
+
+/* message bubbles */
+.msg{display:flex;gap:9px;max-width:100%;animation:fadeUp .3s ease forwards}
+@keyframes fadeUp{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+.msg.user{flex-direction:row-reverse}
+.msg-avatar{width:28px;height:28px;border-radius:50%;border:2px solid var(--ink);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;align-self:flex-end}
+.msg-avatar.ai{background:var(--em2);color:var(--gd)}
+.msg-avatar.usr{background:var(--gdp);color:var(--ink)}
+.msg-bubble{max-width:82%;border:2px solid var(--ink);border-radius:12px;padding:10px 13px;position:relative;box-shadow:2.5px 2.5px 0 var(--ink)}
+.msg.user .msg-bubble{background:var(--em);color:white;border-radius:12px 12px 2px 12px}
+.msg.ai .msg-bubble{background:white;border-radius:12px 12px 12px 2px}
+.mb-text{font-size:12.5px;line-height:1.65}
+.msg.user .mb-text{color:rgba(255,255,255,.95)}
+.mb-text b,.mb-text strong{font-weight:700}
+.msg.ai .mb-text b{color:var(--em)}
+.mb-meta{font-size:9.5px;color:var(--mu);margin-top:5px;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:5px}
+.msg.user .mb-meta{color:rgba(255,255,255,.5);justify-content:flex-end}
+.mb-model-tag{background:var(--gdp);border:1px solid var(--gd);border-radius:3px;padding:1px 5px;font-size:8.5px;font-weight:600;color:var(--ink)}
+
+/* gender-aware response indicator */
+.gender-note{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:600;border-radius:3px;padding:1px 6px;margin-bottom:6px}
+.gn-m{background:var(--emp);color:var(--em);border:1px solid var(--em)}
+.gn-f{background:#F5EEFF;color:#7B4FA0;border:1px solid #7B4FA0}
+
+/* typing indicator */
+.typing-wrap{display:flex;gap:9px;animation:fadeUp .3s ease}
+.typing-bubble{background:white;border:2px solid var(--ink);border-radius:12px 12px 12px 2px;padding:12px 15px;box-shadow:2.5px 2.5px 0 var(--ink);display:flex;align-items:center;gap:5px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--mu2)}
+.typing-dot:nth-child(1){animation:td .9s ease-in-out infinite}
+.typing-dot:nth-child(2){animation:td .9s ease-in-out .18s infinite}
+.typing-dot:nth-child(3){animation:td .9s ease-in-out .36s infinite}
+@keyframes td{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-6px);opacity:1}}
+
+/* quick reply chips */
+.qr-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.qr{border:1.5px solid var(--ink);border-radius:20px;padding:4px 11px;font-size:10.5px;cursor:pointer;background:var(--cr2);transition:.15s;font-family:inherit;font-weight:500}
+.qr:hover{background:var(--emp);border-color:var(--em);color:var(--em)}
+
+/* context snippet cards in AI messages */
+.ctx-snippet{background:var(--emp);border:1.5px solid var(--em);border-radius:7px;padding:7px 10px;margin-top:7px;display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.cs-item{font-size:10px}
+.cs-lbl{color:var(--mu);margin-bottom:1px}
+.cs-val{font-family:'DM Mono',monospace;font-weight:700;color:var(--tx);font-size:11px}
+
+/* date divider */
+.date-divider{display:flex;align-items:center;gap:10px;font-size:9.5px;color:var(--mu);font-family:'DM Mono',monospace}
+.date-divider::before,.date-divider::after{content:'';flex:1;height:1px;background:var(--cr3)}
+
+/* suggested prompts (empty/new state) */
+.suggestions-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:20px;text-align:center}
+.sug-twin{margin-bottom:14px}
+.sug-title{font-size:16px;font-family:'DM Serif Display',serif;letter-spacing:-.03em;margin-bottom:4px}
+.sug-sub{font-size:11.5px;color:var(--mu);margin-bottom:18px}
+.sug-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:480px}
+.sug-card{border:2px solid var(--ink);border-radius:10px;padding:11px 13px;background:white;box-shadow:2.5px 2.5px 0 var(--ink);cursor:pointer;text-align:left;transition:.15s;font-family:inherit}
+.sug-card:hover{transform:translate(-1px,-1px);box-shadow:3.5px 3.5px 0 var(--ink);background:var(--emp);border-color:var(--em)}
+.sug-icon{font-size:16px;margin-bottom:5px}
+.sug-q{font-size:11.5px;font-weight:600;margin-bottom:2px}
+.sug-d{font-size:10px;color:var(--mu);line-height:1.4}
+
+/* ─── INPUT BAR ─── */
+.input-area{border-top:2px solid var(--ink);padding:10px 14px;background:var(--cr2);flex-shrink:0}
+.ia-tools{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.ia-tool{border:1.5px solid var(--ink);border-radius:6px;padding:4px 9px;font-size:10.5px;cursor:pointer;background:white;box-shadow:1.5px 1.5px 0 var(--ink);transition:.15s;display:flex;align-items:center;gap:4px;font-family:inherit;font-weight:500}
+.ia-tool:hover{background:var(--emp);border-color:var(--em)}
+.ia-tool.active{background:var(--emp);border-color:var(--em);color:var(--em)}
+.ia-spacer{flex:1}
+.ia-lang-sel{border:1.5px solid var(--ink);border-radius:6px;padding:4px 8px;font-size:10.5px;background:white;font-family:inherit;outline:none;cursor:pointer;box-shadow:1.5px 1.5px 0 var(--ink)}
+
+.ia-row{display:flex;gap:8px;align-items:flex-end}
+.ia-input-wrap{flex:1;background:white;border:2px solid var(--ink);border-radius:10px;padding:9px 12px;display:flex;align-items:flex-end;gap:8px;box-shadow:3px 3px 0 var(--ink);transition:.2s}
+.ia-input-wrap:focus-within{border-color:var(--em);box-shadow:3px 3px 0 var(--em)}
+.ia-textarea{flex:1;border:none;outline:none;background:transparent;font-family:inherit;font-size:12.5px;color:var(--tx);resize:none;line-height:1.5;min-height:18px;max-height:100px}
+.ia-textarea::placeholder{color:var(--mu)}
+.ia-icons{display:flex;gap:4px;align-self:flex-end}
+.ia-icon{width:26px;height:26px;border-radius:6px;border:1.5px solid var(--ink);background:var(--cr2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
+.ia-icon:hover{background:var(--cr3)}
+.btn-send{width:40px;height:40px;border-radius:9px;border:2.5px solid var(--ink);background:var(--em);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:3px 3px 0 var(--ink);transition:.15s;flex-shrink:0}
+.btn-send:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.btn-send:active{transform:translate(0,0);box-shadow:2px 2px 0 var(--ink)}
+
+.ia-disclaimer{font-size:9.5px;color:var(--mu);text-align:center;margin-top:6px;font-family:'DM Mono',monospace}
+
+/* ─── RIGHT SIDEBAR ─── */
+.sidebar-right{border-left:2px solid var(--ink);display:flex;flex-direction:column;background:var(--cr);overflow-y:auto}
+
+.sr-section{padding:12px 13px;border-bottom:1.5px solid var(--cr3)}
+.sr-title{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);font-family:'DM Mono',monospace;margin-bottom:9px;display:flex;align-items:center;justify-content:space-between}
+
+/* twin mini preview */
+.twin-mini{display:flex;flex-direction:column;align-items:center;background:var(--em2);border:2px solid var(--ink);border-radius:10px;padding:12px 10px;box-shadow:2px 2px 0 var(--ink);position:relative;overflow:hidden;margin-bottom:0}
+.twin-mini::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0,rgba(255,255,255,.03) 1px,transparent 1px,transparent 22px);pointer-events:none}
+
+@keyframes bf{0%,100%{transform:perspective(400px) rotateY(-5deg) translateY(0)}50%{transform:perspective(400px) rotateY(5deg) translateY(-6px)}}
+@keyframes hbeat{0%,100%{transform:scale(1)}35%{transform:scale(1.14)}65%{transform:scale(1.06)}85%{transform:scale(1.12)}}
+@keyframes pg{0%{transform-origin:center;transform:scale(.6);opacity:.8}100%{transform-origin:center;transform:scale(2.2);opacity:0}}
+@keyframes pd{0%,100%{transform-origin:center;transform:scale(1)}50%{transform-origin:center;transform:scale(1.2)}}
+@keyframes glowRing{0%,100%{r:16}50%{r:18}}
+
+.twin-float{animation:bf 5.5s ease-in-out infinite;display:block}
+.twin-hbeat{transform-box:fill-box;animation:hbeat .8s ease-in-out infinite}
+.twin-ping{transform-box:fill-box;animation:pg 2s ease-out infinite}
+.twin-pdot{transform-box:fill-box;animation:pd 2s ease-in-out infinite}
+
+.twin-status{display:flex;flex-direction:column;gap:4px;width:100%;margin-top:10px}
+.ts-row{display:flex;justify-content:space-between;align-items:center}
+.ts-lbl{font-size:9.5px;color:rgba(255,255,255,.5);font-family:'DM Mono',monospace}
+.ts-val{font-size:10px;font-family:'DM Mono',monospace;font-weight:700}
+.ts-val.ok{color:#7EC8A0}
+.ts-val.warn{color:var(--gd2)}
+
+/* mini vitals bars */
+.vital-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.1);margin:2px 0 5px;overflow:hidden}
+.vb-fill{height:100%;border-radius:2px;transition:width 1s ease}
+
+/* risk pills */
+.risk-pills{display:flex;flex-direction:column;gap:5px}
+.rp{display:flex;align-items:center;justify-content:space-between;background:white;border:1.5px solid var(--ink);border-radius:7px;padding:6px 9px;box-shadow:1.5px 1.5px 0 var(--ink)}
+.rp-left{display:flex;align-items:center;gap:6px}
+.rp-icon{font-size:12px}
+.rp-name{font-size:11px;font-weight:600}
+.rp-score{font-family:'DM Mono',monospace;font-size:11px;font-weight:700}
+.rp-score.lo{color:var(--em3)}
+.rp-score.me{color:var(--ora)}
+
+/* topics section */
+.topic-chips{display:flex;flex-wrap:wrap;gap:5px}
+.tc{border:1.5px solid var(--ink);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;background:white;box-shadow:1.5px 1.5px 0 var(--ink);transition:.15s;font-family:inherit}
+.tc:hover{background:var(--emp);border-color:var(--em);color:var(--em)}
+
+/* disclaimer footer */
+.sr-footer{padding:10px 13px;margin-top:auto}
+.sr-disc{font-size:9px;color:var(--mu);line-height:1.6;font-family:'DM Mono',monospace;text-align:center}
+.sr-tagline{font-size:9.5px;color:var(--mu);font-style:italic;text-align:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--cr3)}
+
+/* scrollbar styling */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--cr3);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--mu2)}
+
+/* female override */
+.female-mode .msg.user .msg-bubble{background:#7B4FA0}
+.female-mode .ch-dot-live{background:#9B59B6}
+</style>
+</head>
+<body>
+
+<div class="pw">
+<div class="bc">
+  <div class="bds"><div class="bd"></div><div class="bd"></div><div class="bd"></div></div>
+  <div class="bu">vitanomy.health/chat — AI Health Assistant · Claude-Sonnet</div>
+</div>
+<div class="site" id="site">
+
+  <!-- LANG STRIP -->
+  <div class="ls">
+    <span class="ln">Gender-aware · Multilingual · Powered by Claude</span>
+    <div class="lbs">
+      <span class="lb on" onclick="setLang(this,'en')">EN</span>
+      <span class="lb" onclick="setLang(this,'hi')">हि</span>
+      <span class="lb" onclick="setLang(this,'ta')">த</span>
+      <span class="lb" onclick="setLang(this,'te')">తె</span>
+      <span class="lb" onclick="setLang(this,'kn')">ಕ</span>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="logo">
+      <div class="licon">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+          <path d="M9 2C5 2 2 5.5 2 9.5C2 13 5 16 9 16C13 16 16 13 16 9.5C16 5.5 13 2 9 2Z" fill="#C9A84C" opacity=".3"/>
+          <path d="M3 10L6 7L9 11L12 6L15 9" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </div>
+      <div class="ltxt">Vita<b>Nomy</b></div>
+    </div>
+    <div class="nav-links">
+      <span class="nl">Dashboard</span>
+      <span class="nl">Simulator</span>
+      <span class="nl active">Chat AI</span>
+      <span class="nl">Reports</span>
+    </div>
+    <div class="nav-r">
+      <div class="nav-user">
+        <div class="nav-avatar" id="nav-av">A</div>
+        <span id="nav-name">Alex Morgan</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ── LEFT SIDEBAR ── -->
+    <div class="sidebar-left">
+      <div class="sl-head">
+        <div class="sl-label">Patient Profile</div>
+
+        <!-- gender toggle -->
+        <div class="gender-pill">
+          <div class="gp-opt m sel" id="gopt-m" onclick="setGender('m')">♂ Male</div>
+          <div class="gp-opt f" id="gopt-f" onclick="setGender('f')">♀ Female</div>
+        </div>
+
+        <!-- patient card -->
+        <div class="ctx-card">
+          <div class="ctx-avatar" id="ctx-avatar">
+            <svg id="av-male" width="32" height="32" viewBox="0 0 32 32" fill="none">
+              <circle cx="16" cy="16" r="16" fill="#E4F0EA"/>
+              <ellipse cx="16" cy="12" rx="6" ry="6.5" fill="#F2E8D0" stroke="#1A2520" stroke-width="1"/>
+              <ellipse cx="11.5" cy="12.5" rx="1.5" ry="2" fill="#F2E8D0" stroke="#1A2520" stroke-width=".8"/>
+              <ellipse cx="20.5" cy="12.5" rx="1.5" ry="2" fill="#F2E8D0" stroke="#1A2520" stroke-width=".8"/>
+              <ellipse cx="14" cy="11.5" rx="1.2" ry="1.5" fill="#1A2520"/>
+              <ellipse cx="18" cy="11.5" rx="1.2" ry="1.5" fill="#1A2520"/>
+              <path d="M9 22 Q9 19 16 19 Q23 19 23 22 L23 32 L9 32Z" fill="#1B5E3B" opacity=".7"/>
+              <path d="M9 22 Q9 19 16 19 Q23 19 23 22" stroke="#1A2520" stroke-width=".8" fill="none"/>
+            </svg>
+            <svg id="av-female" width="32" height="32" viewBox="0 0 32 32" fill="none" style="display:none">
+              <circle cx="16" cy="16" r="16" fill="#F5EEFF"/>
+              <ellipse cx="16" cy="12" rx="6.5" ry="7" fill="#F5EDDA" stroke="#1A2520" stroke-width="1"/>
+              <ellipse cx="10.5" cy="11.5" rx="1.8" ry="2.5" fill="#F5EDDA" stroke="#1A2520" stroke-width=".8"/>
+              <ellipse cx="21.5" cy="11.5" rx="1.8" ry="2.5" fill="#F5EDDA" stroke="#1A2520" stroke-width=".8"/>
+              <path d="M11 8 Q13 4 16 4 Q19 4 21 8" stroke="#1A2520" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+              <ellipse cx="14" cy="11.5" rx="1.2" ry="1.5" fill="#1A2520"/>
+              <ellipse cx="18" cy="11.5" rx="1.2" ry="1.5" fill="#1A2520"/>
+              <path d="M9 23 Q9 19 16 19 Q23 19 23 23 L23 32 L9 32Z" fill="#7B4FA0" opacity=".65"/>
+            </svg>
+          </div>
+          <div class="ctx-name" id="ctx-name">Alex Morgan</div>
+          <div class="ctx-meta" id="ctx-meta">M · 34y · BMI 30.1</div>
+          <div class="ctx-vitals">
+            <div class="cv"><span class="cv-label">Glucose</span><span class="cv-val warn" id="cv-gl">118 mg/dL</span></div>
+            <div class="cv"><span class="cv-label">BP</span><span class="cv-val warn" id="cv-bp">138/88</span></div>
+            <div class="cv"><span class="cv-label">Heart Rate</span><span class="cv-val ok" id="cv-hr">76 bpm</span></div>
+            <div class="cv"><span class="cv-label">HbA1c</span><span class="cv-val warn" id="cv-hb">5.8%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- chat history -->
+      <div class="sl-hist">
+        <div class="sl-label" style="margin-bottom:8px">History</div>
+        <div class="hist-item active">
+          <div class="hi-title">Cardiac risk & diet</div>
+          <div class="hi-meta">Today · 14 msgs</div>
+        </div>
+        <div class="hist-item">
+          <div class="hi-title">Sleep & hypertension</div>
+          <div class="hi-meta">Yesterday</div>
+        </div>
+        <div class="hist-item">
+          <div class="hi-title">Keto diet impact</div>
+          <div class="hi-meta">2 days ago</div>
+        </div>
+        <div class="hist-item">
+          <div class="hi-title">Exercise recommendations</div>
+          <div class="hi-meta">Apr 1</div>
+        </div>
+        <div class="hist-item">
+          <div class="hi-title">Understanding HbA1c</div>
+          <div class="hi-meta">Mar 28</div>
+        </div>
+      </div>
+
+      <button class="btn-new-chat" onclick="startNewChat()">+ New Chat</button>
+    </div>
+
+    <!-- ── CHAT CENTRE ── -->
+    <div class="chat-area">
+
+      <!-- chat header -->
+      <div class="chat-header">
+        <div class="ch-left">
+          <div class="ch-avatar">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 1C4.58 1 1 4.58 1 9C1 13.42 4.58 17 9 17C13.42 17 17 13.42 17 9C17 4.58 13.42 1 9 1Z" fill="#C9A84C" opacity=".3"/>
+              <path d="M3 10L6 7L9 11L12 6L15 9" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+            <div class="ch-pulse"></div>
+          </div>
+          <div>
+            <div class="ch-name">VitaNomy AI · Dr. Vita</div>
+            <div class="ch-sub" id="ch-sub">Analysing Alex's twin · Gender-calibrated</div>
+          </div>
+        </div>
+        <div class="ch-right">
+          <div class="ch-gender-badge m" id="ch-gbadge">♂ Male Mode</div>
+          <div class="ch-badge"><div class="ch-dot-live"></div>Claude-Sonnet</div>
+        </div>
+      </div>
+
+      <!-- messages -->
+      <div class="messages" id="messages">
+
+        <div class="date-divider">Today, April 4 2026</div>
+
+        <!-- AI greeting -->
+        <div class="msg ai">
+          <div class="msg-avatar ai">V</div>
+          <div>
+            <div class="msg-bubble">
+              <div class="gender-note gn-m" id="greet-note">♂ Male-calibrated response</div>
+              <div class="mb-text" id="greet-text">Hello, Alex. I've reviewed your latest twin data. A few things stand out — your <b>fasting glucose at 118 mg/dL</b> puts you in the pre-diabetic range, and your <b>BP of 138/88</b> is Stage 1 hypertension territory.<br><br>Men in your age group (30–40) with this profile respond very well to targeted aerobic exercise combined with reduced sodium. Your cardiac risk score dropped 15 points in the simulator when you hit 4× weekly cardio.<br><br>What would you like to explore today?</div>
+              <div class="qr-row">
+                <span class="qr" onclick="sendQuick(this)">Why is my glucose elevated?</span>
+                <span class="qr" onclick="sendQuick(this)">Best foods for my BP</span>
+                <span class="qr" onclick="sendQuick(this)">Exercise plan for men 34</span>
+                <span class="qr" onclick="sendQuick(this)">Explain my HbA1c</span>
+              </div>
+              <div class="mb-meta">
+                <span class="mb-model-tag">claude-sonnet-4</span>
+                <span>Just now</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User message -->
+        <div class="msg user">
+          <div class="msg-avatar usr">A</div>
+          <div class="msg-bubble">
+            <div class="mb-text">Why is my glucose elevated even though I don't eat that much sugar?</div>
+            <div class="mb-meta">10:42 AM</div>
+          </div>
+        </div>
+
+        <!-- AI response with context card -->
+        <div class="msg ai">
+          <div class="msg-avatar ai">V</div>
+          <div>
+            <div class="msg-bubble">
+              <div class="gender-note gn-m">♂ Based on Alex's male metabolic profile</div>
+              <div class="mb-text">Great question, Alex. Blood glucose isn't just about direct sugar intake — it's more complex, especially for men in their 30s.<br><br>Based on your twin data, the most likely contributors are:<br><br>
+              <b>1. Insulin resistance</b> — Your BMI of 30.1 combined with a sedentary work lifestyle creates systemic insulin resistance. Even complex carbs spike glucose hard.<br><br>
+              <b>2. Cortisol spikes</b> — Your stress score (7/10 in last session) triggers gluconeogenesis — your liver literally makes glucose from non-sugar sources overnight.<br><br>
+              <b>3. Sleep quality</b> — Men who sleep under 7 hours see a 15–20% rise in morning glucose. Your twin clocked 6.2hrs average last week.</div>
+              <div class="ctx-snippet">
+                <div class="cs-item"><div class="cs-lbl">Your glucose</div><div class="cs-val">118 mg/dL ⚠️</div></div>
+                <div class="cs-item"><div class="cs-lbl">Normal range</div><div class="cs-val">&lt; 100 mg/dL</div></div>
+                <div class="cs-item"><div class="cs-lbl">Your sleep avg</div><div class="cs-val">6.2 hrs / night</div></div>
+                <div class="cs-item"><div class="cs-lbl">Stress score</div><div class="cs-val">7 / 10</div></div>
+              </div>
+              <div class="qr-row">
+                <span class="qr" onclick="sendQuick(this)">How to lower cortisol?</span>
+                <span class="qr" onclick="sendQuick(this)">Sleep tips for glucose</span>
+                <span class="qr" onclick="sendQuick(this)">Foods that spike insulin</span>
+              </div>
+              <div class="mb-meta">
+                <span class="mb-model-tag">claude-sonnet-4</span>
+                <span>10:42 AM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User message 2 -->
+        <div class="msg user">
+          <div class="msg-avatar usr">A</div>
+          <div class="msg-bubble">
+            <div class="mb-text">What's a realistic diet change I can actually stick to?</div>
+            <div class="mb-meta">10:45 AM</div>
+          </div>
+        </div>
+
+        <!-- AI response 2 -->
+        <div class="msg ai">
+          <div class="msg-avatar ai">V</div>
+          <div>
+            <div class="msg-bubble">
+              <div class="gender-note gn-m">♂ Personalised for Alex · Male · 34y · BMI 30.1</div>
+              <div class="mb-text">I'll keep this practical, Alex. Based on your profile and the <b>Clean Living simulation</b> that dropped your glucose to 98 mg/dL, here's what actually moved the needle:<br><br>
+              <b>The 3 changes with the highest impact:</b><br><br>
+              🥗 <b>Swap white rice → bajra / oats</b> — Cuts your post-meal glucose spike by ~30%. Easy win for Indian meals.<br><br>
+              🧂 <b>Sodium under 1,500mg/day</b> — Your BP drops 8–12 points within 2 weeks. Read labels; bread is the #1 hidden source.<br><br>
+              ☕ <b>No carbs in the first hour after waking</b> — Your cortisol is highest at 7–9am. Protein-first breakfast (eggs, paneer) blunts the glucose rise.<br><br>
+              These three changes alone gave your twin a <b>+14 point health score</b> in the 1-month simulation.</div>
+              <div class="qr-row">
+                <span class="qr" onclick="sendQuick(this)">Protein-first breakfast ideas</span>
+                <span class="qr" onclick="sendQuick(this)">What's a good sodium count?</span>
+                <span class="qr" onclick="sendQuick(this)">Run a new simulation →</span>
+              </div>
+              <div class="mb-meta">
+                <span class="mb-model-tag">claude-sonnet-4</span>
+                <span>10:46 AM · 3 sources cited</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- INPUT AREA -->
+      <div class="input-area">
+        <div class="ia-tools">
+          <button class="ia-tool active" id="tool-twin" onclick="toggleTool(this)">🧬 Twin context</button>
+          <button class="ia-tool" id="tool-sim" onclick="toggleTool(this)">⚡ Simulator link</button>
+          <button class="ia-tool" id="tool-pdf" onclick="toggleTool(this)">📄 Cite sources</button>
+          <div class="ia-spacer"></div>
+          <select class="ia-lang-sel" onchange="setLangSel(this.value)">
+            <option value="en">🌐 English</option>
+            <option value="hi">हिंदी</option>
+            <option value="ta">தமிழ்</option>
+            <option value="te">తెలుగు</option>
+            <option value="kn">ಕನ್ನಡ</option>
+          </select>
+        </div>
+
+        <div class="ia-row">
+          <div class="ia-input-wrap">
+            <textarea class="ia-textarea" id="chat-input" placeholder="Ask Dr. Vita about your health, diet, medication, or simulate a scenario..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+            <div class="ia-icons">
+              <div class="ia-icon" title="Voice input">🎤</div>
+              <div class="ia-icon" title="Attach report">📎</div>
+            </div>
+          </div>
+          <button class="btn-send" onclick="sendMessage()" title="Send">↑</button>
+        </div>
+
+        <div class="ia-disclaimer">Dr. Vita is AI-powered and not a substitute for professional medical advice. Always consult your doctor.</div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT SIDEBAR ── -->
+    <div class="sidebar-right">
+
+      <!-- TWIN MINI PREVIEW -->
+      <div class="sr-section">
+        <div class="sr-title">Live Twin <span>Active</span></div>
+        <div class="twin-mini">
+          <svg class="twin-float" width="72" height="170" viewBox="0 0 72 170" fill="none">
+            <!-- pulse rings -->
+            <circle cx="36" cy="13" r="7" fill="rgba(201,168,76,.08)" class="twin-ping"/>
+            <circle cx="36" cy="13" r="5" fill="rgba(201,168,76,.16)" class="twin-pdot"/>
+            <!-- head -->
+            <ellipse cx="36" cy="13" rx="11" ry="12" fill="#F2E8D0" stroke="rgba(255,255,255,.25)" stroke-width="1"/>
+            <ellipse cx="25.5" cy="13.5" rx="2.2" ry="3.5" fill="#F2E8D0" stroke="rgba(255,255,255,.2)" stroke-width=".8"/>
+            <ellipse cx="46.5" cy="13.5" rx="2.2" ry="3.5" fill="#F2E8D0" stroke="rgba(255,255,255,.2)" stroke-width=".8"/>
+            <ellipse cx="32" cy="12.5" rx="1.5" ry="2" fill="#1A2520"/>
+            <ellipse cx="40" cy="12.5" rx="1.5" ry="2" fill="#1A2520"/>
+            <!-- neck -->
+            <rect x="32.5" y="24" width="7" height="7" rx="2" fill="#EDE4CA" stroke="rgba(255,255,255,.2)" stroke-width=".8"/>
+            <!-- torso -->
+            <path d="M18 31 Q16 56 18 72 L54 72 Q56 56 54 31 Q46 27 36 27 Q26 27 18 31Z" fill="rgba(27,94,59,.65)" stroke="rgba(255,255,255,.15)" stroke-width="1"/>
+            <!-- heart beat -->
+            <path class="twin-hbeat" d="M28 42 C28 38 33 36 36 41 C39 36 44 38 44 42 C44 48 36 54 36 54 C36 54 28 48 28 42Z" fill="rgba(224,122,95,.8)" stroke="rgba(255,255,255,.2)" stroke-width=".8" style="transform-origin:36px 45px"/>
+            <!-- vitals line -->
+            <polyline points="20,60 23,60 25.5,53 28,67 31,48 34,62 36,62 39,60 42,60" stroke="rgba(201,168,76,.9)" stroke-width=".9" fill="none" stroke-linecap="round"/>
+            <!-- arms -->
+            <path d="M18 34 L9 55 Q8 59 10 61 L12 61 L19 40" fill="rgba(240,230,204,.7)" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
+            <path d="M54 34 L63 55 Q64 59 62 61 L60 61 L53 40" fill="rgba(240,230,204,.7)" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
+            <ellipse cx="9.5" cy="64" rx="3.5" ry="3" fill="#F2E8D0" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
+            <ellipse cx="62.5" cy="64" rx="3.5" ry="3" fill="#F2E8D0" stroke="rgba(255,255,255,.15)" stroke-width=".8"/>
+            <!-- legs -->
+            <path d="M23 72 L21 106 Q20 111 23 113 L29 113 L31 75" fill="rgba(27,94,59,.55)" stroke="rgba(255,255,255,.12)" stroke-width=".8"/>
+            <path d="M49 72 L51 106 Q52 111 49 113 L43 113 L41 75" fill="rgba(27,94,59,.55)" stroke="rgba(255,255,255,.12)" stroke-width=".8"/>
+            <path d="M21 112 L20 138 Q19 142 22 144 L29 144 L29 112" fill="rgba(240,230,204,.6)" stroke="rgba(255,255,255,.12)" stroke-width=".8"/>
+            <path d="M51 112 L52 138 Q53 142 50 144 L43 144 L43 112" fill="rgba(240,230,204,.6)" stroke="rgba(255,255,255,.12)" stroke-width=".8"/>
+            <ellipse cx="23" cy="147" rx="7" ry="3.5" fill="#F2E8D0" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
+            <ellipse cx="49" cy="147" rx="7" ry="3.5" fill="#F2E8D0" stroke="rgba(255,255,255,.1)" stroke-width=".8"/>
+          </svg>
+
+          <div class="twin-status">
+            <div class="ts-row"><span class="ts-lbl">Glucose</span><span class="ts-val warn">118 mg/dL</span></div>
+            <div class="vital-bar"><div class="vb-fill" style="width:59%;background:#E8C86E"></div></div>
+            <div class="ts-row"><span class="ts-lbl">BP Systolic</span><span class="ts-val warn">138 mmHg</span></div>
+            <div class="vital-bar"><div class="vb-fill" style="width:69%;background:#E8C86E"></div></div>
+            <div class="ts-row"><span class="ts-lbl">Heart Rate</span><span class="ts-val ok">76 bpm</span></div>
+            <div class="vital-bar"><div class="vb-fill" style="width:38%;background:#7EC8A0"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RISK SNAPSHOT -->
+      <div class="sr-section">
+        <div class="sr-title">Risk Snapshot</div>
+        <div class="risk-pills">
+          <div class="rp">
+            <div class="rp-left"><span class="rp-icon">🩸</span><span class="rp-name">Diabetes</span></div>
+            <span class="rp-score me">44%</span>
+          </div>
+          <div class="rp">
+            <div class="rp-left"><span class="rp-icon">❤️</span><span class="rp-name">Cardiac</span></div>
+            <span class="rp-score me">55%</span>
+          </div>
+          <div class="rp">
+            <div class="rp-left"><span class="rp-icon">🫀</span><span class="rp-name">Hypertension</span></div>
+            <span class="rp-score me">49%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUGGESTED TOPICS -->
+      <div class="sr-section">
+        <div class="sr-title">Ask About</div>
+        <div class="topic-chips">
+          <span class="tc" onclick="insertTopic('Diet for pre-diabetes')">Diet for pre-diabetes</span>
+          <span class="tc" onclick="insertTopic('Exercise plan this week')">Exercise plan</span>
+          <span class="tc" onclick="insertTopic('How to reduce BP naturally')">Reduce BP</span>
+          <span class="tc" onclick="insertTopic('Medication side effects')">Medication</span>
+          <span class="tc" onclick="insertTopic('Sleep & blood sugar link')">Sleep & sugar</span>
+          <span class="tc" onclick="insertTopic('Stress and hypertension')">Stress</span>
+          <span class="tc" onclick="insertTopic('Interpret my HbA1c')">HbA1c</span>
+          <span class="tc" onclick="insertTopic('Cholesterol foods to avoid')">Cholesterol</span>
+        </div>
+      </div>
+
+      <!-- LANGUAGE NOTE -->
+      <div class="sr-section" style="border-bottom:none">
+        <div class="sr-title">Language Mode</div>
+        <div style="font-size:10.5px;color:var(--mu);line-height:1.65">Dr. Vita responds in your chosen language. Switch anytime — your health context carries over seamlessly.</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">
+          <span style="font-size:10.5px;padding:3px 8px;border:1.5px solid var(--ink);border-radius:5px;background:var(--gdp);font-weight:600;cursor:pointer" onclick="setLangQ('en')">English</span>
+          <span style="font-size:10.5px;padding:3px 8px;border:1.5px solid var(--ink);border-radius:5px;background:white;cursor:pointer" onclick="setLangQ('hi')">हिंदी</span>
+          <span style="font-size:10.5px;padding:3px 8px;border:1.5px solid var(--ink);border-radius:5px;background:white;cursor:pointer" onclick="setLangQ('ta')">தமிழ்</span>
+          <span style="font-size:10.5px;padding:3px 8px;border:1.5px solid var(--ink);border-radius:5px;background:white;cursor:pointer" onclick="setLangQ('te')">తెలుగు</span>
+          <span style="font-size:10.5px;padding:3px 8px;border:1.5px solid var(--ink);border-radius:5px;background:white;cursor:pointer" onclick="setLangQ('kn')">ಕನ್ನಡ</span>
+        </div>
+      </div>
+
+      <div class="sr-footer">
+        <div class="sr-disc">Not a medical diagnosis. Always consult a licensed physician for health decisions.</div>
+        <div class="sr-tagline">"Mock early. Integrate late. Polish always."</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+/* ── STATE ── */
+let gender = 'm';
+let currentLang = 'en';
+let isTyping = false;
+
+const profiles = {
+  m: {
+    name: 'Alex Morgan', meta: 'M · 34y · BMI 30.1',
+    navAv: 'A',
+    greeting: '♂ Male-calibrated response',
+    gBadge: '♂ Male Mode', gBadgeClass: 'm',
+    sub: "Analysing Alex's twin · Gender-calibrated",
+    greetText: `Hello, Alex. I've reviewed your latest twin data. A few things stand out — your <b>fasting glucose at 118 mg/dL</b> puts you in the pre-diabetic range, and your <b>BP of 138/88</b> is Stage 1 hypertension territory.<br><br>Men in your age group (30–40) with this profile respond very well to targeted aerobic exercise combined with reduced sodium. Your cardiac risk score dropped 15 points in the simulator when you hit 4× weekly cardio.<br><br>What would you like to explore today?`,
+    quickReplies: ['Why is my glucose elevated?', 'Best foods for my BP', 'Exercise plan for men 34', 'Explain my HbA1c'],
+  },
+  f: {
+    name: 'Priya Sharma', meta: 'F · 29y · BMI 24.3',
+    navAv: 'P',
+    greeting: '♀ Female-calibrated response',
+    gBadge: '♀ Female Mode', gBadgeClass: 'f',
+    sub: "Analysing Priya's twin · Gender-calibrated",
+    greetText: `Hi Priya! I've looked through your latest twin readings. Your overall numbers are good, but a couple of things are worth keeping an eye on — your <b>BP at 126/82</b> is slightly elevated, which is common for women your age under high stress, and your <b>Vitamin D is low</b> (flagged from last upload).<br><br>Women in their late 20s often see hormonal fluctuations affecting BP and glucose — your twin accounts for this in its model. I'll personalise all my advice for your female metabolic profile.<br><br>What's on your mind today?`,
+    quickReplies: ['Hormones & blood pressure', 'Best diet for women 29', 'Iron & energy levels', 'Stress & heart risk'],
+  }
+};
+
+const aiResponses = {
+  m: {
+    default: `Based on Alex's male metabolic profile, here's what your twin data suggests:<br><br>Your current risk trajectory shows <b>moderate-to-high probability</b> of developing Type 2 diabetes within 5 years without lifestyle changes. The good news — the simulator shows this is entirely reversible at your age.<br><br>The most impactful intervention for men at BMI 30+ is <b>Zone 2 cardio</b> (conversational pace, 45 min, 4× week). It directly improves insulin sensitivity in skeletal muscle.<br><br>Would you like me to build a specific weekly plan around your schedule?`,
+    qr: ['Build my weekly plan', 'Zone 2 cardio explained', 'What foods to avoid?']
+  },
+  f: {
+    default: `Based on Priya's female metabolic profile and hormonal patterns, here's what your twin data suggests:<br><br>For women in their late 20s, BP fluctuations are often cycle-linked — your twin tracks this. The elevation you're seeing is likely <b>luteal phase related</b>, which is common and manageable.<br><br>Key interventions that work best for your profile: <b>magnesium glycinate</b> (helps both BP and sleep quality), reducing caffeine after noon, and 20–30 min of yoga or walking daily — shown to be highly effective for women vs high-intensity cardio at this BP level.<br><br>Shall I walk you through a gentle daily rhythm that fits your lifestyle?`,
+    qr: ['Cycle-linked BP explained', 'Magnesium benefits', 'Daily rhythm plan']
+  }
+};
+
+/* ── GENDER SWITCH ── */
+function setGender(g) {
+  gender = g;
+  const p = profiles[g];
+
+  // update gender pill
+  document.getElementById('gopt-m').className = 'gp-opt m' + (g==='m'?' sel':'');
+  document.getElementById('gopt-f').className = 'gp-opt f' + (g==='f'?' sel':'');
+
+  // update patient card
+  document.getElementById('ctx-name').textContent = p.name;
+  document.getElementById('ctx-meta').textContent = p.meta;
+  document.getElementById('nav-av').textContent = p.navAv;
+  document.getElementById('nav-name').textContent = p.name;
+  document.getElementById('ch-sub').textContent = p.sub;
+
+  const badge = document.getElementById('ch-gbadge');
+  badge.textContent = p.gBadge;
+  badge.className = 'ch-gender-badge ' + p.gBadgeClass;
+
+  // toggle avatar SVG
+  document.getElementById('av-male').style.display = g==='m'?'block':'none';
+  document.getElementById('av-female').style.display = g==='f'?'block':'none';
+
+  // toggle site class for female purple accents
+  document.getElementById('site').classList.toggle('female-mode', g==='f');
+
+  // update vitals for female profile
+  if(g==='f'){
+    document.getElementById('cv-gl').textContent='94 mg/dL';
+    document.getElementById('cv-gl').className='cv-val ok';
+    document.getElementById('cv-bp').textContent='126/82';
+    document.getElementById('cv-bp').className='cv-val warn';
+    document.getElementById('cv-hr').textContent='72 bpm';
+    document.getElementById('cv-hb').textContent='5.1%';
+    document.getElementById('cv-hb').className='cv-val ok';
+  } else {
+    document.getElementById('cv-gl').textContent='118 mg/dL';
+    document.getElementById('cv-gl').className='cv-val warn';
+    document.getElementById('cv-bp').textContent='138/88';
+    document.getElementById('cv-bp').className='cv-val warn';
+    document.getElementById('cv-hr').textContent='76 bpm';
+    document.getElementById('cv-hb').textContent='5.8%';
+    document.getElementById('cv-hb').className='cv-val warn';
+  }
+
+  // update greeting message
+  document.getElementById('greet-note').textContent = p.greeting;
+  document.getElementById('greet-note').className = 'gender-note ' + (g==='m'?'gn-m':'gn-f');
+  document.getElementById('greet-text').innerHTML = p.greetText;
+
+  // update quick replies in greeting
+  const qrRow = document.querySelector('.qr-row');
+  qrRow.innerHTML = p.quickReplies.map(q=>`<span class="qr" onclick="sendQuick(this)">${q}</span>`).join('');
+}
+
+/* ── SEND MESSAGE ── */
+function sendMessage() {
+  const inp = document.getElementById('chat-input');
+  const text = inp.value.trim();
+  if(!text || isTyping) return;
+  inp.value = '';
+  inp.style.height = '';
+  appendUserMsg(text);
+  simulateAI();
+}
+
+function sendQuick(el) {
+  const text = el.textContent;
+  appendUserMsg(text);
+  simulateAI();
+}
+
+function appendUserMsg(text) {
+  const messages = document.getElementById('messages');
+  const msg = document.createElement('div');
+  msg.className = 'msg user';
+  msg.innerHTML = `
+    <div class="msg-avatar usr">${gender==='m'?'A':'P'}</div>
+    <div class="msg-bubble">
+      <div class="mb-text">${escHtml(text)}</div>
+      <div class="mb-meta">${getTime()}</div>
+    </div>`;
+  messages.appendChild(msg);
+  scrollBottom();
+}
+
+function simulateAI() {
+  isTyping = true;
+  const messages = document.getElementById('messages');
+
+  // typing indicator
+  const typing = document.createElement('div');
+  typing.className = 'typing-wrap';
+  typing.id = 'typing-indicator';
+  typing.innerHTML = `
+    <div class="msg-avatar ai">V</div>
+    <div class="typing-bubble">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>`;
+  messages.appendChild(typing);
+  scrollBottom();
+
+  setTimeout(() => {
+    typing.remove();
+    const resp = aiResponses[gender] || aiResponses.m;
+    const msg = document.createElement('div');
+    msg.className = 'msg ai';
+    msg.innerHTML = `
+      <div class="msg-avatar ai">V</div>
+      <div>
+        <div class="msg-bubble">
+          <div class="gender-note ${gender==='m'?'gn-m':'gn-f'}">${gender==='m'?'♂ Based on Alex\'s male profile':'♀ Based on Priya\'s female profile'}</div>
+          <div class="mb-text">${resp.default}</div>
+          <div class="qr-row">${resp.qr.map(q=>`<span class="qr" onclick="sendQuick(this)">${q}</span>`).join('')}</div>
+          <div class="mb-meta">
+            <span class="mb-model-tag">claude-sonnet-4</span>
+            <span>${getTime()}</span>
+          </div>
+        </div>
+      </div>`;
+    messages.appendChild(msg);
+    scrollBottom();
+    isTyping = false;
+  }, 1600);
+}
+
+/* ── HELPERS ── */
+function handleKey(e) {
+  if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = '';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function scrollBottom() {
+  const m = document.getElementById('messages');
+  setTimeout(()=>{ m.scrollTop = m.scrollHeight; },50);
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function getTime() {
+  const now = new Date();
+  return now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+function toggleTool(el) { el.classList.toggle('active'); }
+
+function insertTopic(t) {
+  const inp = document.getElementById('chat-input');
+  inp.value = t;
+  inp.focus();
+  autoResize(inp);
+}
+
+function startNewChat() {
+  const messages = document.getElementById('messages');
+  messages.innerHTML = `<div class="date-divider">New Chat · ${new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>`;
+  const p = profiles[gender];
+  const msg = document.createElement('div');
+  msg.className = 'msg ai';
+  msg.innerHTML = `
+    <div class="msg-avatar ai">V</div>
+    <div>
+      <div class="msg-bubble">
+        <div class="gender-note ${gender==='m'?'gn-m':'gn-f'}">${p.greeting}</div>
+        <div class="mb-text">${p.greetText}</div>
+        <div class="qr-row">${p.quickReplies.map(q=>`<span class="qr" onclick="sendQuick(this)">${q}</span>`).join('')}</div>
+        <div class="mb-meta"><span class="mb-model-tag">claude-sonnet-4</span><span>${getTime()}</span></div>
+      </div>
+    </div>`;
+  messages.appendChild(msg);
+  scrollBottom();
+}
+
+/* ── LANGUAGE ── */
+function setLang(el, lang) {
+  document.querySelectorAll('.lb').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  currentLang = lang;
+  if(lang!=='en') showLangToast(lang);
+}
+
+function setLangSel(lang) {
+  currentLang = lang;
+  const langMap={'en':'EN','hi':'हि','ta':'த','te':'తె','kn':'ಕ'};
+  document.querySelectorAll('.lb').forEach(b=>{b.classList.toggle('on',b.textContent===langMap[lang])});
+  if(lang!=='en') showLangToast(lang);
+}
+
+function setLangQ(lang) {
+  setLangSel(lang);
+  document.querySelector('.ia-lang-sel').value = lang;
+}
+
+function showLangToast(lang) {
+  const msgs = {hi:'भाषा परिवर्तित: हिंदी',ta:'மொழி மாற்றப்பட்டது: தமிழ்',te:'భాష మార్చబడింది: తెలుగు',kn:'ಭಾಷೆ ಬದಲಾಯಿಸಲಾಗಿದೆ: ಕನ್ನಡ'};
+  // Brief visual indicator — in real app would switch AI response language
+  const inp = document.getElementById('chat-input');
+  const ph = {hi:'डॉ. विटा से स्वास्थ्य के बारे में पूछें...',ta:'டாக்டர் விட்டாவிடம் கேளுங்கள்...',te:'డాక్టర్ విటాను అడగండి...',kn:'ಡಾ. ವಿಟಾ ಅವರನ್ನು ಕೇಳಿ...'};
+  inp.placeholder = ph[lang] || 'Ask Dr. Vita about your health...';
+}
+</script>
+</body>
+</html>

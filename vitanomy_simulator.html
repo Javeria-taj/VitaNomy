@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VitaNomy — Simulator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cr:#F8F5EE;--cr2:#EDE7D8;--cr3:#E4DDD0;
+  --em:#1B5E3B;--em2:#0D3D26;--em3:#2E7D52;--emp:#E4F0EA;
+  --gd:#C9A84C;--gd2:#E8C86E;--gdp:#F7EDD0;
+  --ink:#0A0F0D;--tx:#1A2520;--mu:#5C7268;--mu2:#8AA090;
+  --red:#C0392B;--redp:#FDECEA;--ora:#E07A5F;--orap:#FDF0EC;
+  --pur:#7B68EE;--purp:#F0EEFF;
+}
+
+/* ─── FONTS ─── */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap');
+
+body{font-family:'Instrument Sans',system-ui,sans-serif;background:#C8C2B2;color:var(--tx);min-height:100vh}
+
+/* ─── BROWSER CHROME ─── */
+.pw{max-width:1040px;margin:0 auto;padding:14px}
+.bc{background:var(--cr2);border:2.5px solid var(--ink);border-radius:12px 12px 0 0;border-bottom:none;padding:9px 14px;display:flex;align-items:center;gap:10px}
+.bds{display:flex;gap:6px}
+.bd{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--ink)}
+.bd:nth-child(1){background:#FF5F56}.bd:nth-child(2){background:#FFBD2E}.bd:nth-child(3){background:#27C93F}
+.bu{flex:1;background:white;border:1.5px solid var(--ink);border-radius:5px;padding:4px 12px;font-size:11px;color:var(--mu);text-align:center;font-family:'DM Mono',monospace}
+.site{border:2.5px solid var(--ink);border-radius:0 0 12px 12px;overflow:hidden;background:var(--cr);box-shadow:8px 8px 0 var(--ink)}
+
+/* ─── LANG STRIP ─── */
+.ls{background:var(--em2);padding:6px 24px;display:flex;justify-content:space-between;align-items:center}
+.ln{font-size:10px;color:rgba(255,255,255,.4);font-family:'DM Mono',monospace}
+.lbs{display:flex;gap:3px}
+.lb{font-size:10px;padding:3px 8px;border-radius:3px;color:rgba(255,255,255,.5);cursor:pointer;transition:.15s}
+.lb.on{background:var(--gd);color:var(--ink);font-weight:600}
+
+/* ─── NAV ─── */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:11px 24px;border-bottom:2px solid var(--ink);background:var(--cr)}
+.logo{display:flex;align-items:center;gap:9px}
+.licon{width:32px;height:32px;background:var(--em);border:2px solid var(--ink);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:2px 2px 0 var(--ink)}
+.ltxt{font-size:18px;letter-spacing:-.04em;font-family:'DM Serif Display',serif}
+.ltxt b{color:var(--gd);font-weight:400}
+.nav-links{display:flex;gap:4px}
+.nl{font-size:11px;padding:5px 12px;border-radius:5px;color:var(--mu);cursor:pointer;transition:.15s}
+.nl:hover{background:var(--cr2)}
+.nl.active{background:var(--em);color:white;font-weight:600;box-shadow:2px 2px 0 var(--ink);border:1.5px solid var(--ink)}
+.nav-r{display:flex;align-items:center;gap:8px}
+.nav-user{display:flex;align-items:center;gap:7px;border:2px solid var(--ink);border-radius:8px;padding:5px 11px;background:white;box-shadow:2px 2px 0 var(--ink);font-size:11.5px;font-weight:600;cursor:pointer}
+.nav-avatar{width:22px;height:22px;border-radius:50%;background:var(--em);border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:10px;color:white}
+
+/* ─── PAGE HEADER ─── */
+.pg-head{padding:18px 24px 14px;border-bottom:2px solid var(--ink);background:var(--cr);display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.ph-left{}
+.ph-breadcrumb{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--mu);margin-bottom:6px;font-family:'DM Mono',monospace}
+.ph-bc-sep{opacity:.4}
+.ph-bc-cur{color:var(--tx);font-weight:500}
+.ph-title{font-size:22px;letter-spacing:-.04em;font-family:'DM Serif Display',serif;margin-bottom:3px}
+.ph-title em{font-style:italic;color:var(--em)}
+.ph-sub{font-size:12px;color:var(--mu);line-height:1.5}
+.ph-right{display:flex;align-items:center;gap:8px;flex-shrink:0;padding-top:4px}
+.ph-badge{display:flex;align-items:center;gap:6px;background:var(--emp);border:2px solid var(--em);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:600;color:var(--em)}
+.ph-dot{width:7px;height:7px;border-radius:50%;background:var(--em3);animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.ph-reset{border:2px solid var(--ink);border-radius:7px;padding:6px 13px;font-size:11px;font-weight:600;background:white;box-shadow:2px 2px 0 var(--ink);cursor:pointer;font-family:inherit;color:var(--tx);transition:.15s}
+.ph-reset:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
+
+/* ─── MARQUEE ─── */
+.mq{background:var(--em);border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);padding:8px 0;overflow:hidden}
+.mtr{display:flex;animation:ms 30s linear infinite;width:max-content}
+@keyframes ms{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.mi{font-size:11px;font-weight:600;color:rgba(255,255,255,.85);white-space:nowrap;padding:0 20px;display:flex;align-items:center;gap:8px;font-family:'DM Mono',monospace}
+.ms-dot{color:var(--gd)}
+
+/* ─── SCENARIO STRIP ─── */
+.sc-strip{padding:16px 24px;border-bottom:2px solid var(--ink);background:var(--cr2);display:flex;gap:10px;align-items:center;overflow-x:auto}
+.sc-label{font-size:10.5px;font-weight:600;color:var(--mu);white-space:nowrap;margin-right:4px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.05em}
+.sc-card{border:2.5px solid var(--ink);border-radius:10px;padding:9px 14px;background:white;box-shadow:3px 3px 0 var(--ink);cursor:pointer;display:flex;align-items:center;gap:8px;white-space:nowrap;transition:.15s;flex-shrink:0}
+.sc-card:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.sc-card.active{background:var(--em);border-color:var(--ink);box-shadow:3px 3px 0 var(--ink)}
+.sc-card.active .sc-n,.sc-card.active .sc-d{color:white}
+.sc-icon{font-size:16px}
+.sc-n{font-size:11.5px;font-weight:600}
+.sc-d{font-size:10px;color:var(--mu);margin-top:1px}
+.sc-card.active .sc-d{color:rgba(255,255,255,.65)}
+.sc-add{border:2px dashed var(--ink);border-radius:10px;padding:9px 14px;background:transparent;cursor:pointer;font-size:11px;color:var(--mu);display:flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0;transition:.15s}
+.sc-add:hover{background:var(--cr3)}
+
+/* ─── MAIN 3-COL LAYOUT ─── */
+.main{display:grid;grid-template-columns:220px 1fr 260px;min-height:520px}
+
+/* ─── LEFT — CONTROLS ─── */
+.col-left{border-right:2px solid var(--ink);padding:18px 16px;background:var(--cr);display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.ctrl-section{}
+.ctrl-title{font-size:10px;font-weight:700;color:var(--mu);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:6px}
+.ctrl-title::after{content:'';flex:1;height:1px;background:var(--cr3)}
+
+/* slider controls */
+.ctrl-item{margin-bottom:12px}
+.ci-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.ci-label{font-size:11.5px;font-weight:600}
+.ci-val{font-size:12px;font-family:'DM Mono',monospace;color:var(--em);font-weight:600;background:var(--emp);border:1.5px solid var(--em);border-radius:5px;padding:2px 7px}
+.ci-val.warn{color:var(--ora);background:var(--orap);border-color:var(--ora)}
+.ci-val.danger{color:var(--red);background:var(--redp);border-color:var(--red)}
+.slider{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;background:var(--cr3);outline:none;cursor:pointer;border:1.5px solid var(--ink)}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--em);border:2.5px solid var(--ink);box-shadow:1px 1px 0 var(--ink);cursor:pointer;transition:.1s}
+.slider::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.slider.warn::-webkit-slider-thumb{background:var(--gd)}
+.slider.danger::-webkit-slider-thumb{background:var(--red)}
+.ci-range{display:flex;justify-content:space-between;font-size:9px;color:var(--mu);margin-top:3px;font-family:'DM Mono',monospace}
+
+/* toggle switches */
+.ci-toggle{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ct-label{font-size:11.5px;font-weight:600}
+.toggle{width:36px;height:20px;background:var(--cr3);border:2px solid var(--ink);border-radius:10px;cursor:pointer;position:relative;transition:.2s;flex-shrink:0}
+.toggle.on{background:var(--em)}
+.toggle::after{content:'';position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:white;border:1.5px solid var(--ink);transition:.2s}
+.toggle.on::after{left:18px}
+
+/* select dropdown */
+.ci-select{width:100%;border:2px solid var(--ink);border-radius:7px;padding:7px 10px;font-size:11.5px;background:white;outline:none;font-family:inherit;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%230A0F0D' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.ci-select:focus{border-color:var(--em)}
+
+/* delta chip on slider */
+.delta-chip{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;margin-left:4px;font-family:'DM Mono',monospace}
+.dc-good{background:var(--emp);color:var(--em);border:1px solid var(--em)}
+.dc-bad{background:var(--redp);color:var(--red);border:1px solid var(--red)}
+.dc-warn{background:var(--orap);color:var(--ora);border:1px solid var(--ora)}
+
+/* apply button */
+.btn-run{width:100%;padding:11px;background:var(--gd);color:var(--ink);border:2.5px solid var(--ink);border-radius:8px;font-size:12.5px;font-weight:700;box-shadow:3px 3px 0 var(--ink);cursor:pointer;font-family:inherit;transition:.15s;letter-spacing:.01em;position:relative;overflow:hidden}
+.btn-run:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.btn-run::after{content:'→';position:absolute;right:14px;top:50%;transform:translateY(-50%)}
+
+/* ─── CENTER — BODY CANVAS ─── */
+.col-mid{border-right:2px solid var(--ink);position:relative;overflow:hidden;background:var(--cr);display:flex;flex-direction:column}
+
+/* timeline compare bar */
+.timeline-bar{padding:10px 18px;border-bottom:2px solid var(--ink);display:flex;align-items:center;justify-content:space-between;background:var(--cr2)}
+.tb-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--mu);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.tb-months{display:flex;gap:4px}
+.tb-m{font-size:10px;padding:3px 9px;border:1.5px solid var(--ink);border-radius:5px;cursor:pointer;font-family:'DM Mono',monospace;font-weight:600;background:white;transition:.15s}
+.tb-m.active{background:var(--em);color:white;border-color:var(--em)}
+.tb-m:hover:not(.active){background:var(--cr3)}
+
+/* body canvas area */
+.body-canvas{flex:1;position:relative;display:flex;align-items:center;justify-content:center;padding:20px;min-height:420px;overflow:hidden}
+
+/* SVG bg grid */
+.body-canvas::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(27,94,59,.06) 1px,transparent 1px);background-size:22px 22px;pointer-events:none}
+
+/* comparison mode */
+.compare-wrap{display:flex;align-items:center;justify-content:center;gap:20px;width:100%;height:100%}
+.compare-panel{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1}
+.cp-label{font-size:10px;font-family:'DM Mono',monospace;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 10px;border-radius:4px;border:1.5px solid var(--ink)}
+.cp-label.baseline{background:var(--cr2);color:var(--mu)}
+.cp-label.simulated{background:var(--em);color:white}
+.compare-divider{width:2px;background:var(--ink);height:280px;position:relative;flex-shrink:0}
+.compare-divider::before{content:'VS';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--gd);border:2px solid var(--ink);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:var(--ink)}
+
+/* body model */
+@keyframes bf{0%,100%{transform:perspective(600px) rotateY(-6deg) translateY(0)}50%{transform:perspective(600px) rotateY(6deg) translateY(-10px)}}
+@keyframes bf2{0%,100%{transform:perspective(600px) rotateY(4deg) translateY(-4px)}50%{transform:perspective(600px) rotateY(-4deg) translateY(4px)}}
+@keyframes pg{0%{transform-origin:center;transform:scale(.6);opacity:.9}100%{transform-origin:center;transform:scale(2.4);opacity:0}}
+@keyframes pd{0%,100%{transform-origin:center;transform:scale(1)}50%{transform-origin:center;transform:scale(1.25)}}
+@keyframes hbeat{0%,100%{transform:scale(1)}30%{transform:scale(1.12)}60%{transform:scale(1.04)}80%{transform:scale(1.1)}}
+@keyframes slideLeft{0%{transform:translateX(40px);opacity:0}100%{transform:translateX(0);opacity:1}}
+@keyframes fadeUp{0%{transform:translateY(12px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes flowUp{0%{stroke-dashoffset:60}100%{stroke-dashoffset:0}}
+@keyframes pulse-glow{0%,100%{filter:drop-shadow(0 0 0px rgba(192,57,43,0))}50%{filter:drop-shadow(0 0 8px rgba(192,57,43,.6))}}
+@keyframes pulse-warn{0%,100%{filter:drop-shadow(0 0 0px rgba(224,122,95,0))}50%{filter:drop-shadow(0 0 6px rgba(224,122,95,.5))}}
+@keyframes wiggle{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+@keyframes countUp{0%{opacity:0}100%{opacity:1}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+
+.bfloat{animation:bf 6s ease-in-out infinite}
+.bfloat2{animation:bf2 7s ease-in-out infinite}
+.ping-c{transform-box:fill-box;animation:pg 2.2s ease-out infinite}
+.pdot-c{transform-box:fill-box;animation:pd 2.2s ease-in-out infinite}
+.heart-beat{transform-box:fill-box;animation:hbeat .8s ease-in-out infinite}
+
+/* hotspot annotations on body */
+.anno{position:absolute;display:flex;align-items:center;gap:5px;animation:fadeUp .5s ease forwards}
+.anno-bubble{background:white;border:2px solid var(--ink);border-radius:8px;padding:5px 9px;font-size:10px;font-weight:600;box-shadow:2.5px 2.5px 0 var(--ink);white-space:nowrap;display:flex;align-items:center;gap:5px;position:relative}
+.anno-bubble::after{content:'';position:absolute;width:6px;height:2px;background:var(--ink)}
+.anno-right .anno-bubble::after{left:calc(100% + 1px)}
+.anno-left .anno-bubble::after{right:calc(100% + 1px)}
+.ab-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--ink);flex-shrink:0}
+.ab-val{font-family:'DM Mono',monospace}
+.ab-tag{font-size:8.5px;color:var(--mu);font-weight:400;margin-left:2px}
+/* connector lines */
+.anno-line{width:32px;height:2px;background:var(--ink);flex-shrink:0;position:relative}
+.anno-line::before{content:'';position:absolute;width:5px;height:5px;border-radius:50%;background:var(--ink);top:50%;transform:translateY(-50%)}
+.anno-right .anno-line{margin-left:0}
+.anno-right .anno-line::before{right:-2px}
+.anno-left .anno-line::before{left:-2px}
+
+/* issue highlight on sim body */
+.issue-heart{animation:pulse-glow 1.5s ease-in-out infinite}
+.issue-kidney{animation:pulse-warn 2s ease-in-out infinite}
+
+/* ─── RIGHT — RESULTS ─── */
+.col-right{padding:16px 14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;background:var(--cr)}
+
+.r-section-title{font-size:10px;font-weight:700;color:var(--mu);letter-spacing:.08em;text-transform:uppercase;font-family:'DM Mono',monospace;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.r-section-title span{opacity:.4}
+
+/* risk score gauges */
+.gauge-card{border:2.5px solid var(--ink);border-radius:11px;padding:12px 13px;background:white;box-shadow:3px 3px 0 var(--ink);margin-bottom:8px}
+.gc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.gc-name{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.gc-icon{font-size:14px}
+.gc-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;border:1.5px solid}
+.badge-lo{background:var(--emp);color:var(--em);border-color:var(--em)}
+.badge-me{background:var(--orap);color:var(--ora);border-color:var(--ora)}
+.badge-hi{background:var(--redp);color:var(--red);border-color:var(--red)}
+
+/* arc gauge */
+.arc-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:8px}
+.arc-svg{overflow:visible}
+.arc-bg{fill:none;stroke:var(--cr3);stroke-width:7;stroke-linecap:round}
+.arc-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dasharray 1.2s cubic-bezier(.4,0,.2,1)}
+.arc-text{font-family:'DM Mono',monospace;font-weight:700;font-size:13px;fill:var(--tx)}
+.arc-sub{font-size:7px;fill:var(--mu);font-family:'DM Mono',monospace}
+
+/* delta row */
+.delta-row{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;padding:4px 0;border-top:1px solid var(--cr3)}
+.dr-label{color:var(--mu);font-weight:500}
+.dr-vals{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:11px}
+.dr-old{color:var(--mu);text-decoration:line-through;font-size:10px}
+.dr-new{font-weight:700;color:var(--tx)}
+.dr-arrow{font-size:10px}
+.dr-arrow.good{color:var(--em3)}
+.dr-arrow.bad{color:var(--red)}
+.dr-arrow.same{color:var(--mu)}
+
+/* summary insight card */
+.insight-card{border:2.5px solid var(--ink);border-radius:11px;padding:13px;background:var(--em2);box-shadow:3px 3px 0 var(--ink);position:relative;overflow:hidden}
+.insight-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,.02) 0,rgba(255,255,255,.02) 1px,transparent 1px,transparent 12px)}
+.ic-title{font-size:10px;font-weight:700;color:var(--gd2);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ic-title::before{content:'✦'}
+.ic-lines{display:flex;flex-direction:column;gap:5px}
+.ic-line{font-size:11px;color:rgba(255,255,255,.75);line-height:1.5;padding-left:10px;position:relative}
+.ic-line::before{content:'→';position:absolute;left:0;color:var(--gd);font-size:10px}
+.ic-line b{color:white}
+.ic-footer{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;color:rgba(255,255,255,.35);font-style:italic;font-family:'DM Mono',monospace}
+
+/* overall score change */
+.score-change{border:2.5px solid var(--ink);border-radius:11px;padding:13px;background:var(--gdp);box-shadow:3px 3px 0 var(--ink);display:flex;align-items:center;gap:12px}
+.sc-num-wrap{text-align:center;flex-shrink:0}
+.sc-old{font-size:11px;color:var(--mu);text-decoration:line-through;font-family:'DM Mono',monospace}
+.sc-new{font-size:28px;font-weight:700;color:var(--em);font-family:'DM Mono',monospace;line-height:1}
+.sc-unit{font-size:10px;color:var(--mu);margin-top:2px}
+.sc-arrow-big{font-size:22px;color:var(--em);flex-shrink:0}
+.sc-text{}
+.sc-t-title{font-size:12px;font-weight:700;margin-bottom:3px}
+.sc-t-sub{font-size:10.5px;color:var(--mu);line-height:1.5}
+
+/* download button */
+.btn-dl{width:100%;padding:10px;background:white;color:var(--tx);border:2.5px solid var(--ink);border-radius:8px;font-size:11.5px;font-weight:700;box-shadow:3px 3px 0 var(--ink);cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-dl:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink);background:var(--cr2)}
+.btn-dl-icon{font-size:13px}
+
+/* ─── BOTTOM STATUS BAR ─── */
+.status-bar{padding:8px 24px;border-top:2px solid var(--ink);background:var(--em2);display:flex;align-items:center;justify-content:space-between}
+.sb-left{display:flex;align-items:center;gap:14px}
+.sb-item{font-size:10px;color:rgba(255,255,255,.5);font-family:'DM Mono',monospace;display:flex;align-items:center;gap:5px}
+.sb-item b{color:rgba(255,255,255,.85)}
+.sb-live{width:6px;height:6px;border-radius:50%;background:#27C93F;animation:blink 1.5s ease-in-out infinite}
+.sb-tagline{font-size:9.5px;color:rgba(255,255,255,.25);font-style:italic;letter-spacing:.04em}
+
+/* ─── ANIMATION ENTRANCE ─── */
+.col-right>*{animation:fadeUp .4s ease forwards;opacity:0}
+.col-right>*:nth-child(1){animation-delay:.05s}
+.col-right>*:nth-child(2){animation-delay:.12s}
+.col-right>*:nth-child(3){animation-delay:.19s}
+.col-right>*:nth-child(4){animation-delay:.26s}
+.col-right>*:nth-child(5){animation-delay:.33s}
+.col-right>*:nth-child(6){animation-delay:.4s}
+
+/* ─── SCENARIO TOOLTIP MODAL ─── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--em);color:white;border:2px solid var(--ink);border-radius:10px;padding:10px 20px;font-size:12px;font-weight:600;box-shadow:4px 4px 0 var(--ink);z-index:100;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap;font-family:inherit}
+.toast.show{opacity:1}
+
+/* responsive min-widths */
+.main{min-width:680px}
+</style>
+</head>
+<body>
+
+<div class="pw">
+<div class="bc">
+  <div class="bds"><div class="bd"></div><div class="bd"></div><div class="bd"></div></div>
+  <div class="bu">vitanomy.health/simulator — What-If Scenario Engine</div>
+</div>
+<div class="site">
+
+  <!-- LANG STRIP -->
+  <div class="ls">
+    <span class="ln">Multilingual health intelligence · Scenario Mode</span>
+    <div class="lbs">
+      <span class="lb on">EN</span><span class="lb">हि</span><span class="lb">த</span><span class="lb">తె</span><span class="lb">ಕ</span>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="logo">
+      <div class="licon">
+        <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+          <path d="M9 2C5 2 2 5.5 2 9.5C2 13 5 16 9 16C13 16 16 13 16 9.5C16 5.5 13 2 9 2Z" fill="#C9A84C" opacity=".3"/>
+          <path d="M3 10L6 7L9 11L12 6L15 9" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </div>
+      <div class="ltxt">Vita<b>Nomy</b></div>
+    </div>
+    <div class="nav-links">
+      <span class="nl">Dashboard</span>
+      <span class="nl active">Simulator</span>
+      <span class="nl">Chat AI</span>
+      <span class="nl">Reports</span>
+    </div>
+    <div class="nav-r">
+      <div class="nav-user">
+        <div class="nav-avatar">A</div>
+        Alex Morgan
+      </div>
+    </div>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="pg-head">
+    <div class="ph-left">
+      <div class="ph-breadcrumb">
+        <span>Dashboard</span><span class="ph-bc-sep">›</span>
+        <span class="ph-bc-cur">What-If Simulator</span>
+      </div>
+      <div class="ph-title">Simulate your <em>health future</em></div>
+      <div class="ph-sub">Adjust lifestyle variables and watch your risk scores update in real-time. Your AI twin recalculates instantly.</div>
+    </div>
+    <div class="ph-right">
+      <div class="ph-badge"><div class="ph-dot"></div>Twin Active · Alex M.</div>
+      <button class="ph-reset" onclick="resetAll()">↺ Reset All</button>
+    </div>
+  </div>
+
+  <!-- MARQUEE -->
+  <div class="mq">
+    <div class="mtr">
+      <span class="mi"><span class="ms-dot">✦</span> What-If Engine</span>
+      <span class="mi"><span class="ms-dot">✦</span> Real-Time Recalculation</span>
+      <span class="mi"><span class="ms-dot">✦</span> 3 Conditions Tracked</span>
+      <span class="mi"><span class="ms-dot">✦</span> Lifestyle Scenarios</span>
+      <span class="mi"><span class="ms-dot">✦</span> PDF Report Export</span>
+      <span class="mi"><span class="ms-dot">✦</span> Gender-Personalised AI</span>
+      <span class="mi"><span class="ms-dot">✦</span> 5 Languages</span>
+      <span class="mi"><span class="ms-dot">✦</span> Claude-Powered Insights</span>
+      <span class="mi"><span class="ms-dot">✦</span> Mock early. Integrate late. Polish always.</span>
+      <!-- duplicate for seamless loop -->
+      <span class="mi"><span class="ms-dot">✦</span> What-If Engine</span>
+      <span class="mi"><span class="ms-dot">✦</span> Real-Time Recalculation</span>
+      <span class="mi"><span class="ms-dot">✦</span> 3 Conditions Tracked</span>
+      <span class="mi"><span class="ms-dot">✦</span> Lifestyle Scenarios</span>
+      <span class="mi"><span class="ms-dot">✦</span> PDF Report Export</span>
+      <span class="mi"><span class="ms-dot">✦</span> Gender-Personalised AI</span>
+      <span class="mi"><span class="ms-dot">✦</span> 5 Languages</span>
+      <span class="mi"><span class="ms-dot">✦</span> Claude-Powered Insights</span>
+      <span class="mi"><span class="ms-dot">✦</span> Mock early. Integrate late. Polish always.</span>
+    </div>
+  </div>
+
+  <!-- SCENARIO PRESET STRIP -->
+  <div class="sc-strip">
+    <span class="sc-label">Presets ↓</span>
+    <div class="sc-card active" onclick="applyScenario(this,'clean')">
+      <div class="sc-icon">🥗</div>
+      <div>
+        <div class="sc-n">Clean Living</div>
+        <div class="sc-d">Diet + exercise + sleep</div>
+      </div>
+    </div>
+    <div class="sc-card" onclick="applyScenario(this,'sedentary')">
+      <div class="sc-icon">🛋️</div>
+      <div>
+        <div class="sc-n">Sedentary Spike</div>
+        <div class="sc-d">No movement, high carbs</div>
+      </div>
+    </div>
+    <div class="sc-card" onclick="applyScenario(this,'keto')">
+      <div class="sc-icon">🥩</div>
+      <div>
+        <div class="sc-n">Keto Protocol</div>
+        <div class="sc-d">Low carb, high fat diet</div>
+      </div>
+    </div>
+    <div class="sc-card" onclick="applyScenario(this,'stress')">
+      <div class="sc-icon">😰</div>
+      <div>
+        <div class="sc-n">High Stress</div>
+        <div class="sc-d">Work overload, poor sleep</div>
+      </div>
+    </div>
+    <div class="sc-card" onclick="applyScenario(this,'intermittent')">
+      <div class="sc-icon">⏱️</div>
+      <div>
+        <div class="sc-n">Intermittent Fast</div>
+        <div class="sc-d">16:8 fasting protocol</div>
+      </div>
+    </div>
+    <div class="sc-add" onclick="showToast('Custom scenario builder coming soon! 🚀')">
+      + Custom
+    </div>
+  </div>
+
+  <!-- MAIN 3-COL LAYOUT -->
+  <div class="main">
+
+    <!-- ── LEFT: CONTROLS ── -->
+    <div class="col-left">
+
+      <div class="ctrl-section">
+        <div class="ctrl-title">Diet & Nutrition</div>
+
+        <div class="ctrl-item">
+          <div class="ci-top">
+            <span class="ci-label">Daily Calories</span>
+            <span class="ci-val" id="val-cal">1800 kcal</span>
+          </div>
+          <input class="slider" type="range" min="1200" max="3500" value="1800" oninput="upd('cal',this.value,'kcal',1200,2200,2800)" id="sl-cal"/>
+          <div class="ci-range"><span>1200</span><span>3500 kcal</span></div>
+        </div>
+
+        <div class="ctrl-item">
+          <div class="ci-top">
+            <span class="ci-label">Carb Intake</span>
+            <span class="ci-val" id="val-carb">180 g/day</span>
+          </div>
+          <input class="slider" type="range" min="20" max="400" value="180" oninput="upd('carb',this.value,'g/d',20,150,280)" id="sl-carb"/>
+          <div class="ci-range"><span>20g</span><span>400g</span></div>
+        </div>
+
+        <div class="ctrl-item">
+          <div class="ci-top">
+            <span class="ci-label">Sodium</span>
+            <span class="ci-val" id="val-sodium">1500 mg</span>
+          </div>
+          <input class="slider" type="range" min="500" max="5000" value="1500" oninput="upd('sodium',this.value,'mg',500,2000,3000)" id="sl-sodium"/>
+          <div class="ci-range"><span>500mg</span><span>5000mg</span></div>
+        </div>
+
+        <div class="ctrl-item">
+          <div class="ci-top">
+            <span class="ci-label">Water Intake</span>
+            <span class="ci-val" id="val-water">2.5 L</span>
+          </div>
+          <input class="slider" type="range" min="5" max="40" value="25" step="1" oninput="updF('water',this.value,'L',20,15)" id="sl-water"/>
+          <div class="ci-range"><span>0.5L</span><span>4.0L</span></div>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-title">Activity</div>
+
+        <div class="ctrl-item">
+          <div class="ci-top">
+            <span class="ci-label">Steps / Day</span>
+            <span class="ci-val" id="val-steps">8,000</span>
+          </div>
+          <input class="slider" type="range" min="0" max="20000" value="8000" step="500" oninput="updSteps(this.value)" id="sl-steps"/>
+          <div class="ci-range"><span>0</span><span>20,000</span></div>
+        </div>
+
+        <div class="ctrl-item">
+          <div class="ci-top">
+            <span class="ci-label">Exercise</span>
+            <span class="ci-val" id="val-ex">4×/week</span>
+          </div>
+          <select class="ci-select" onchange="updEx(this.value)">
+            <option value="0">None</option>
+            <option value="1">1× / week</option>
+            <option value="2">2× / week</option>
+            <option value="3">3× / week</option>
+            <option value="4" selected>4× / week</option>
+            <option value="5">5× / week</option>
+            <option value="7">Daily</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ctrl-section">
+        <div class="ctrl-title">Lifestyle</div>
+
+        <div class="ctrl-item">
+          <div class="ci-top">
+            <span class="ci-label">Sleep</span>
+            <span class="ci-val" id="val-sleep">7.5 hrs</span>
+          </div>
+          <input class="slider" type="range" min="30" max="110" value="75" step="5" oninput="updF('sleep',this.value,'hrs',65,45)" id="sl-sleep"/>
+          <div class="ci-range"><span>3h</span><span>11h</span></div>
+        </div>
+
+        <div class="ctrl-item">
+          <div class="ci-top">
+            <span class="ci-label">Stress Level</span>
+            <span class="ci-val" id="val-stress">3 / 10</span>
+          </div>
+          <input class="slider warn" type="range" min="1" max="10" value="3" oninput="updStress(this.value)" id="sl-stress"/>
+          <div class="ci-range"><span>Low</span><span>Critical</span></div>
+        </div>
+
+        <div class="ci-toggle">
+          <span class="ct-label">Smoker</span>
+          <div class="toggle" id="tog-smoke" onclick="togSwitch('smoke')"></div>
+        </div>
+        <div class="ci-toggle">
+          <span class="ct-label">Alcohol consumption</span>
+          <div class="toggle" id="tog-alcohol" onclick="togSwitch('alcohol')"></div>
+        </div>
+        <div class="ci-toggle">
+          <span class="ct-label">Medication adherence</span>
+          <div class="toggle on" id="tog-meds" onclick="togSwitch('meds')"></div>
+        </div>
+      </div>
+
+      <button class="btn-run" onclick="runSim()">Run Simulation</button>
+
+    </div>
+
+    <!-- ── CENTRE: BODY CANVAS ── -->
+    <div class="col-mid">
+      <div class="timeline-bar">
+        <span class="tb-label">Project over</span>
+        <div class="tb-months">
+          <div class="tb-m active" onclick="selMonth(this,'1M')">1M</div>
+          <div class="tb-m" onclick="selMonth(this,'3M')">3M</div>
+          <div class="tb-m" onclick="selMonth(this,'6M')">6M</div>
+          <div class="tb-m" onclick="selMonth(this,'1Y')">1Y</div>
+          <div class="tb-m" onclick="selMonth(this,'5Y')">5Y</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:10px;color:var(--mu);font-family:'DM Mono',monospace">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--mu2);display:inline-block;border-radius:2px"></span>Baseline</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--em);display:inline-block;border-radius:2px"></span>Simulated</span>
+        </div>
+      </div>
+
+      <div class="body-canvas">
+
+        <!-- BASELINE BODY -->
+        <div class="compare-wrap">
+          <div class="compare-panel">
+            <div class="cp-label baseline">Baseline</div>
+            <div style="position:relative;display:flex;align-items:center;justify-content:center;height:310px;width:160px">
+              <!-- annotations left -->
+              <div class="anno anno-left" style="position:absolute;right:calc(100% - 10px);top:48px">
+                <div class="anno-bubble"><div class="ab-dot" style="background:#E07A5F"></div><span class="ab-val">138/88</span><span class="ab-tag">BP</span></div>
+                <div class="anno-line"></div>
+              </div>
+              <div class="anno anno-left" style="position:absolute;right:calc(100% - 10px);top:110px">
+                <div class="anno-bubble"><div class="ab-dot" style="background:#7B68EE"></div><span class="ab-val">118</span><span class="ab-tag">mg/dL</span></div>
+                <div class="anno-line"></div>
+              </div>
+              <!-- body -->
+              <div class="bfloat">
+                <svg width="110" height="290" viewBox="0 0 110 290" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- pulse rings -->
+                  <circle cx="55" cy="22" r="9" fill="rgba(224,122,95,.08)" class="ping-c"/>
+                  <circle cx="55" cy="22" r="6" fill="rgba(224,122,95,.18)" class="pdot-c"/>
+                  <!-- head -->
+                  <ellipse cx="55" cy="22" rx="17" ry="19" fill="#F2E8D0" stroke="#0A0F0D" stroke-width="1.5"/>
+                  <!-- ears -->
+                  <ellipse cx="39" cy="23" rx="3.5" ry="5.5" fill="#F2E8D0" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <ellipse cx="71" cy="23" rx="3.5" ry="5.5" fill="#F2E8D0" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- eyes closed -->
+                  <ellipse cx="49" cy="21" rx="2.5" ry="3" fill="#1A2520"/>
+                  <ellipse cx="61" cy="21" rx="2.5" ry="3" fill="#1A2520"/>
+                  <!-- neck -->
+                  <rect x="49" y="40" width="12" height="10" rx="3" fill="#EEE2C5" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- torso — slightly wider (higher BMI baseline) -->
+                  <path d="M30 52 Q26 90 28 118 L82 118 Q84 90 80 52 Q68 47 55 47 Q42 47 30 52Z" fill="#D4C5A0" stroke="#0A0F0D" stroke-width="1.5"/>
+                  <!-- heart (warning state) -->
+                  <path class="issue-heart" d="M46 68 C46 63 52 61 55 66 C58 61 64 63 64 68 C64 75 55 82 55 82 C55 82 46 75 46 68Z" fill="rgba(224,122,95,.85)" stroke="#0A0F0D" stroke-width="1"/>
+                  <!-- vitals line — slightly elevated -->
+                  <polyline points="34,93 37,93 40,84 43,102 47,79 51,96 55,96 59,93 63,93" stroke="rgba(224,122,95,.9)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                  <!-- arms — slightly thicker -->
+                  <path d="M30 56 L16 88 Q15 93 18 95 L20 95 L32 64" fill="#EEE2C5" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <path d="M80 56 L94 88 Q95 93 92 95 L90 95 L78 64" fill="#EEE2C5" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- hands -->
+                  <ellipse cx="17" cy="98" rx="5.5" ry="4.5" fill="#F2E8D0" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <ellipse cx="93" cy="98" rx="5.5" ry="4.5" fill="#F2E8D0" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- legs -->
+                  <path d="M38 118 L34 172 Q33 178 37 180 L44 180 L48 122" fill="#D4C5A0" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <path d="M72 118 L76 172 Q77 178 73 180 L66 180 L62 122" fill="#D4C5A0" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- shins -->
+                  <path d="M35 178 L33 218 Q32 224 36 226 L43 226 L44 178" fill="#EEE2C5" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <path d="M75 178 L77 218 Q78 224 74 226 L67 226 L66 178" fill="#EEE2C5" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- feet -->
+                  <ellipse cx="37" cy="229" rx="9" ry="5" fill="#F2E8D0" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <ellipse cx="74" cy="229" rx="9" ry="5" fill="#F2E8D0" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- BMI indicator band around waist -->
+                  <path d="M28 95 Q55 100 82 95" stroke="rgba(224,122,95,.4)" stroke-width="4" fill="none" stroke-dasharray="3 3"/>
+                </svg>
+              </div>
+              <!-- annotations right -->
+              <div class="anno anno-right" style="position:absolute;left:calc(100% - 10px);top:60px">
+                <div class="anno-line"></div>
+                <div class="anno-bubble"><div class="ab-dot" style="background:#C9A84C"></div><span class="ab-val">78</span><span class="ab-tag">bpm</span></div>
+              </div>
+              <div class="anno anno-right" style="position:absolute;left:calc(100% - 10px);top:120px">
+                <div class="anno-line"></div>
+                <div class="anno-bubble"><div class="ab-dot" style="background:var(--mu)"></div><span class="ab-val">BMI 30.1</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VS DIVIDER -->
+          <div class="compare-divider"></div>
+
+          <!-- SIMULATED BODY -->
+          <div class="compare-panel">
+            <div class="cp-label simulated">Simulated · 1M</div>
+            <div style="position:relative;display:flex;align-items:center;justify-content:center;height:310px;width:160px">
+              <!-- annotations left -->
+              <div class="anno anno-left" style="position:absolute;right:calc(100% - 10px);top:48px">
+                <div class="anno-bubble"><div class="ab-dot" style="background:var(--em3)"></div><span class="ab-val">122/78</span><span class="ab-tag">BP ↓</span></div>
+                <div class="anno-line"></div>
+              </div>
+              <div class="anno anno-left" style="position:absolute;right:calc(100% - 10px);top:110px">
+                <div class="anno-bubble"><div class="ab-dot" style="background:var(--em3)"></div><span class="ab-val">98</span><span class="ab-tag">mg/dL ↓</span></div>
+                <div class="anno-line"></div>
+              </div>
+              <!-- improved body -->
+              <div class="bfloat2">
+                <svg width="100" height="282" viewBox="0 0 100 282" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- pulse rings — green healthy -->
+                  <circle cx="50" cy="20" r="9" fill="rgba(46,125,82,.1)" class="ping-c" style="animation-delay:.4s"/>
+                  <circle cx="50" cy="20" r="6" fill="rgba(46,125,82,.2)" class="pdot-c" style="animation-delay:.4s"/>
+                  <!-- head -->
+                  <ellipse cx="50" cy="20" rx="16" ry="18" fill="#F5EDDA" stroke="#0A0F0D" stroke-width="1.5"/>
+                  <!-- ears -->
+                  <ellipse cx="35" cy="21" rx="3" ry="5" fill="#F5EDDA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <ellipse cx="65" cy="21" rx="3" ry="5" fill="#F5EDDA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- eyes (slight smile) -->
+                  <path d="M44 19 Q46.5 21 49 19" stroke="#1A2520" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                  <path d="M51 19 Q53.5 21 56 19" stroke="#1A2520" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                  <!-- neck -->
+                  <rect x="44" y="37" width="12" height="10" rx="3" fill="#EDE4CA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- torso — slimmer (improved BMI) -->
+                  <path d="M32 50 Q30 86 32 114 L68 114 Q70 86 68 50 Q60 46 50 46 Q40 46 32 50Z" fill="#1B5E3B" stroke="#0A0F0D" stroke-width="1.5" opacity=".75"/>
+                  <!-- healthy heart -->
+                  <path class="heart-beat" d="M42 66 C42 61 47 59 50 64 C53 59 58 61 58 66 C58 73 50 79 50 79 C50 79 42 73 42 66Z" fill="rgba(46,125,82,.9)" stroke="#0A0F0D" stroke-width="1"/>
+                  <!-- vitals line — healthy -->
+                  <polyline points="33,90 36,90 39,82 42,98 46,77 49,91 51,91 54,90 58,90" stroke="rgba(46,125,82,.9)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                  <!-- arms — leaner -->
+                  <path d="M32 53 L20 83 Q19 88 22 90 L24 90 L34 60" fill="#EDE4CA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <path d="M68 53 L80 83 Q81 88 78 90 L76 90 L66 60" fill="#EDE4CA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- hands -->
+                  <ellipse cx="20" cy="93" rx="5" ry="4" fill="#F5EDDA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <ellipse cx="80" cy="93" rx="5" ry="4" fill="#F5EDDA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- legs — leaner -->
+                  <path d="M36 114 L33 166 Q32 172 36 174 L43 174 L46 118" fill="#1B5E3B" stroke="#0A0F0D" stroke-width="1.2" opacity=".7"/>
+                  <path d="M64 114 L67 166 Q68 172 64 174 L57 174 L54 118" fill="#1B5E3B" stroke="#0A0F0D" stroke-width="1.2" opacity=".7"/>
+                  <!-- shins -->
+                  <path d="M33 172 L31 210 Q30 216 34 218 L41 218 L42 172" fill="#EDE4CA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <path d="M67 172 L69 210 Q70 216 66 218 L59 218 L58 172" fill="#EDE4CA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- feet -->
+                  <ellipse cx="34" cy="221" rx="8.5" ry="4.5" fill="#F5EDDA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <ellipse cx="67" cy="221" rx="8.5" ry="4.5" fill="#F5EDDA" stroke="#0A0F0D" stroke-width="1.2"/>
+                  <!-- improvement sparkles -->
+                  <g fill="none" stroke="#C9A84C" stroke-width="1.2">
+                    <path d="M76 38 L76 44 M73 41 L79 41" stroke-linecap="round"/>
+                    <path d="M82 52 L82 56 M80 54 L84 54" stroke-linecap="round" opacity=".6"/>
+                  </g>
+                </svg>
+              </div>
+              <!-- annotations right -->
+              <div class="anno anno-right" style="position:absolute;left:calc(100% - 10px);top:60px">
+                <div class="anno-line"></div>
+                <div class="anno-bubble"><div class="ab-dot" style="background:var(--em3)"></div><span class="ab-val">68</span><span class="ab-tag">bpm ↓</span></div>
+              </div>
+              <div class="anno anno-right" style="position:absolute;left:calc(100% - 10px);top:120px">
+                <div class="anno-line"></div>
+                <div class="anno-bubble"><div class="ab-dot" style="background:var(--em3)"></div><span class="ab-val">BMI 27.4</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── RIGHT: RESULTS ── -->
+    <div class="col-right">
+
+      <div>
+        <div class="r-section-title">Risk Score Change <span>simulated</span></div>
+
+        <!-- DIABETES GAUGE -->
+        <div class="gauge-card">
+          <div class="gc-head">
+            <div class="gc-name"><span class="gc-icon">🩸</span>Diabetes</div>
+            <div class="gc-badge badge-lo">LOW RISK</div>
+          </div>
+          <div class="arc-wrap">
+            <svg class="arc-svg" width="110" height="65" viewBox="0 0 110 65">
+              <path d="M10 60 A50 50 0 0 1 100 60" class="arc-bg"/>
+              <!-- baseline arc (gray dashed) -->
+              <path d="M10 60 A50 50 0 0 1 100 60" fill="none" stroke="#C9A84C" stroke-width="3" stroke-linecap="round" stroke-dasharray="56 101" opacity=".35"/>
+              <!-- simulated fill -->
+              <path d="M10 60 A50 50 0 0 1 100 60" class="arc-fill" stroke="var(--em3)" stroke-dasharray="34 123" id="arc-diab"/>
+              <text x="55" y="52" text-anchor="middle" class="arc-text" fill="var(--em)">28%</text>
+              <text x="55" y="61" text-anchor="middle" class="arc-sub">was 44%</text>
+            </svg>
+          </div>
+          <div class="delta-row">
+            <span class="dr-label">Fasting Glucose</span>
+            <span class="dr-vals"><span class="dr-old">118</span><span class="dr-arrow good">↓</span><span class="dr-new">98 mg/dL</span></span>
+          </div>
+          <div class="delta-row">
+            <span class="dr-label">HbA1c (est.)</span>
+            <span class="dr-vals"><span class="dr-old">5.8%</span><span class="dr-arrow good">↓</span><span class="dr-new">5.2%</span></span>
+          </div>
+        </div>
+
+        <!-- CARDIAC GAUGE -->
+        <div class="gauge-card">
+          <div class="gc-head">
+            <div class="gc-name"><span class="gc-icon">❤️</span>Cardiac</div>
+            <div class="gc-badge badge-me">MODERATE</div>
+          </div>
+          <div class="arc-wrap">
+            <svg class="arc-svg" width="110" height="65" viewBox="0 0 110 65">
+              <path d="M10 60 A50 50 0 0 1 100 60" class="arc-bg"/>
+              <path d="M10 60 A50 50 0 0 1 100 60" fill="none" stroke="var(--ora)" stroke-width="3" stroke-linecap="round" stroke-dasharray="70 101" opacity=".3"/>
+              <path d="M10 60 A50 50 0 0 1 100 60" class="arc-fill" stroke="var(--gd)" stroke-dasharray="50 123"/>
+              <text x="55" y="52" text-anchor="middle" class="arc-text" fill="var(--gd)">40%</text>
+              <text x="55" y="61" text-anchor="middle" class="arc-sub">was 55%</text>
+            </svg>
+          </div>
+          <div class="delta-row">
+            <span class="dr-label">Heart Rate</span>
+            <span class="dr-vals"><span class="dr-old">78</span><span class="dr-arrow good">↓</span><span class="dr-new">68 bpm</span></span>
+          </div>
+          <div class="delta-row">
+            <span class="dr-label">LDL Cholesterol</span>
+            <span class="dr-vals"><span class="dr-old">138</span><span class="dr-arrow good">↓</span><span class="dr-new">118 mg/dL</span></span>
+          </div>
+        </div>
+
+        <!-- HYPERTENSION GAUGE -->
+        <div class="gauge-card">
+          <div class="gc-head">
+            <div class="gc-name"><span class="gc-icon">🫀</span>Hypertension</div>
+            <div class="gc-badge badge-lo">CONTROLLED</div>
+          </div>
+          <div class="arc-wrap">
+            <svg class="arc-svg" width="110" height="65" viewBox="0 0 110 65">
+              <path d="M10 60 A50 50 0 0 1 100 60" class="arc-bg"/>
+              <path d="M10 60 A50 50 0 0 1 100 60" fill="none" stroke="var(--red)" stroke-width="3" stroke-linecap="round" stroke-dasharray="62 101" opacity=".25"/>
+              <path d="M10 60 A50 50 0 0 1 100 60" class="arc-fill" stroke="var(--em3)" stroke-dasharray="29 123"/>
+              <text x="55" y="52" text-anchor="middle" class="arc-text" fill="var(--em)">23%</text>
+              <text x="55" y="61" text-anchor="middle" class="arc-sub">was 49%</text>
+            </svg>
+          </div>
+          <div class="delta-row">
+            <span class="dr-label">Systolic BP</span>
+            <span class="dr-vals"><span class="dr-old">138</span><span class="dr-arrow good">↓</span><span class="dr-new">122 mmHg</span></span>
+          </div>
+          <div class="delta-row">
+            <span class="dr-label">Diastolic BP</span>
+            <span class="dr-vals"><span class="dr-old">88</span><span class="dr-arrow good">↓</span><span class="dr-new">78 mmHg</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- OVERALL SCORE CHANGE -->
+      <div class="score-change">
+        <div class="sc-num-wrap">
+          <div class="sc-old">72</div>
+          <div class="sc-new">86</div>
+          <div class="sc-unit">Health Score</div>
+        </div>
+        <div class="sc-arrow-big">→</div>
+        <div class="sc-text">
+          <div class="sc-t-title">+14 point improvement</div>
+          <div class="sc-t-sub">Clean living protocol lifts your overall twin score significantly in just 1 month.</div>
+        </div>
+      </div>
+
+      <!-- AI INSIGHT CARD -->
+      <div class="insight-card">
+        <div class="ic-title">AI Twin Insight</div>
+        <div class="ic-lines">
+          <div class="ic-line">Reducing sodium to <b>1,500mg</b> has the highest BP impact for Alex's profile.</div>
+          <div class="ic-line"><b>4× weekly exercise</b> is the single best lever for cardiac risk in men aged 32–45.</div>
+          <div class="ic-line">Glucose normalises within <b>3–4 weeks</b> on this protocol based on twin projection.</div>
+        </div>
+        <div class="ic-footer">Claude-Sonnet · Gender-aware analysis · Alex Morgan (M)</div>
+      </div>
+
+      <!-- DOWNLOAD BUTTON -->
+      <button class="btn-dl" onclick="showToast('📄 Generating your PDF report...')">
+        <span class="btn-dl-icon">📥</span>
+        Download Simulation Report (PDF)
+      </button>
+
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="sb-left">
+      <div class="sb-item"><div class="sb-live"></div>Twin active</div>
+      <div class="sb-item">Scenario: <b>Clean Living</b></div>
+      <div class="sb-item">Projection: <b>1 Month</b></div>
+      <div class="sb-item">Patient: <b>Alex Morgan · M · 34y</b></div>
+    </div>
+    <div class="sb-tagline">"Mock early. Integrate late. Polish always."</div>
+  </div>
+
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── SLIDER UPDATERS ── */
+function upd(id, val, unit, okMax, warnMax, _) {
+  val = parseInt(val);
+  const el = document.getElementById('val-' + id);
+  const sl = document.getElementById('sl-' + id);
+  el.textContent = val.toLocaleString() + ' ' + unit;
+  if (val <= okMax) { el.className = 'ci-val'; sl.className = 'slider'; }
+  else if (val <= warnMax) { el.className = 'ci-val warn'; sl.className = 'slider warn'; }
+  else { el.className = 'ci-val danger'; sl.className = 'slider danger'; }
+}
+
+function updF(id, val, unit, okMin, warnMin) {
+  val = parseInt(val);
+  const el = document.getElementById('val-' + id);
+  const sl = document.getElementById('sl-' + id);
+  const display = (val / 10).toFixed(1);
+  el.textContent = display + ' ' + unit;
+  if (val >= okMin) { el.className = 'ci-val'; sl.className = 'slider'; }
+  else if (val >= warnMin) { el.className = 'ci-val warn'; sl.className = 'slider warn'; }
+  else { el.className = 'ci-val danger'; sl.className = 'slider danger'; }
+}
+
+function updSteps(val) {
+  val = parseInt(val);
+  const el = document.getElementById('val-steps');
+  const sl = document.getElementById('sl-steps');
+  el.textContent = val.toLocaleString();
+  if (val >= 7500) { el.className = 'ci-val'; sl.className = 'slider'; }
+  else if (val >= 4000) { el.className = 'ci-val warn'; sl.className = 'slider warn'; }
+  else { el.className = 'ci-val danger'; sl.className = 'slider danger'; }
+}
+
+function updEx(val) {
+  const el = document.getElementById('val-ex');
+  el.textContent = val === '0' ? 'None' : val === '7' ? 'Daily' : val + '×/week';
+}
+
+function updStress(val) {
+  val = parseInt(val);
+  const el = document.getElementById('val-stress');
+  const sl = document.getElementById('sl-stress');
+  el.textContent = val + ' / 10';
+  if (val <= 3) { el.className = 'ci-val'; sl.className = 'slider'; }
+  else if (val <= 6) { el.className = 'ci-val warn'; sl.className = 'slider warn'; }
+  else { el.className = 'ci-val danger'; sl.className = 'slider danger'; }
+}
+
+/* ── TOGGLES ── */
+function togSwitch(id) {
+  const el = document.getElementById('tog-' + id);
+  el.classList.toggle('on');
+}
+
+/* ── SCENARIO PRESETS ── */
+const scenarios = {
+  clean: { cal:1800, carb:180, sodium:1500, steps:10000, sleep:75, stress:2, ex:'4', water:28 },
+  sedentary: { cal:2800, carb:320, sodium:3500, steps:2000, sleep:55, stress:7, ex:'0', water:15 },
+  keto: { cal:1900, carb:40, sodium:2000, steps:7000, sleep:70, stress:3, ex:'3', water:32 },
+  stress: { cal:2400, carb:260, sodium:2800, steps:3500, sleep:45, stress:9, ex:'1', water:18 },
+  intermittent: { cal:1600, carb:160, sodium:1800, steps:8000, sleep:72, stress:4, ex:'4', water:30 }
+};
+
+function applyScenario(el, key) {
+  document.querySelectorAll('.sc-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const s = scenarios[key];
+  if (!s) return;
+
+  document.getElementById('sl-cal').value = s.cal;
+  upd('cal', s.cal, 'kcal', 1200, 2200, 2800);
+  document.getElementById('sl-carb').value = s.carb;
+  upd('carb', s.carb, 'g/d', 20, 150, 280);
+  document.getElementById('sl-sodium').value = s.sodium;
+  upd('sodium', s.sodium, 'mg', 500, 2000, 3000);
+  document.getElementById('sl-steps').value = s.steps;
+  updSteps(s.steps);
+  document.getElementById('sl-sleep').value = s.sleep;
+  updF('sleep', s.sleep, 'hrs', 65, 45);
+  document.getElementById('sl-stress').value = s.stress;
+  updStress(s.stress);
+  document.getElementById('sl-water').value = s.water;
+  updF('water', s.water, 'L', 20, 15);
+  document.querySelectorAll('.ci-select')[0].value = s.ex;
+  updEx(s.ex);
+}
+
+/* ── TIMELINE ── */
+function selMonth(el, label) {
+  document.querySelectorAll('.tb-m').forEach(m => m.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelector('.cp-label.simulated').textContent = 'Simulated · ' + label;
+}
+
+/* ── RUN SIMULATION (mock flash) ── */
+function runSim() {
+  showToast('⚡ Recalculating twin simulation...');
+  // flash the arcs
+  const arcs = document.querySelectorAll('.arc-fill');
+  arcs.forEach(a => {
+    const orig = a.style.strokeDasharray || a.getAttribute('stroke-dasharray');
+    a.style.strokeDasharray = '0 123';
+    setTimeout(() => { a.style.strokeDasharray = orig; }, 300);
+  });
+}
+
+/* ── RESET ── */
+function resetAll() {
+  applyScenario(document.querySelector('.sc-card'), 'clean');
+  document.querySelectorAll('.sc-card').forEach((c, i) => c.classList.toggle('active', i === 0));
+  document.getElementById('tog-smoke').classList.remove('on');
+  document.getElementById('tog-alcohol').classList.remove('on');
+  document.getElementById('tog-meds').classList.add('on');
+  showToast('↺ Reset to baseline');
+}
+
+/* ── TOAST ── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
