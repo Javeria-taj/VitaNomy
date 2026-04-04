@@ -4,7 +4,8 @@ import {
   AnalyzeResponse,
   ExtractResponse,
   SimulateResponse,
-  PatientRiskScores
+  PatientRiskScores,
+  RiskFactor
 } from '@/types/patient'
 
 // ─── DEMO PATIENT (Patient mode) ─────────────────────────────────────────────
@@ -128,7 +129,7 @@ export const MOCK_PATIENT_ANALYSIS: AnalyzeResponse = {
     overall_risk: 'CRITICAL'
   },
   insights: [
-    'Fasting glucose at 118 mg/dL places Alex firmly in prediabetic range.',
+    'Fasting glucose at 118 mg/dL places [NAME] firmly in prediabetic range.',
     'HDL at 38 mg/dL is critically low — smoking is the primary driver.',
     'BP of 138/88 combined with zero exercise is accelerating hypertension.'
   ],
@@ -185,7 +186,7 @@ export const MOCK_ATHLETE_ANALYSIS: AnalyzeResponse = {
   },
   insights: [
     'LH at 0.4 and FSH at 0.8 indicate complete HPTA shutdown.',
-    'Anadrol cycle has exceeded recommended 6-week limit — ALT elevation confirms hepatic stress.',
+    'Anadrol cycle has exceeded recommended 6-week limit — ALT elevation confirms [NAME]\'s hepatic stress.',
     'HDL at 28 mg/dL is severely compound-suppressed — cardiovascular risk elevated.'
   ],
   recommendations: [
@@ -224,9 +225,9 @@ export const MOCK_SIMULATION: SimulateResponse = {
   original_risks: patientScores,
   projected_risks: {
     ...patientScores,
-    diabetes: { ...patientScores.diabetes, score: 53 },
-    cardiac: { ...patientScores.cardiac, score: 42 },
-    hypertension: { ...patientScores.hypertension, score: 60 }
+    diabetes: { ...(patientScores.diabetes as RiskFactor), score: 53 },
+    cardiac: { ...(patientScores.cardiac as RiskFactor), score: 42 },
+    hypertension: { ...(patientScores.hypertension as RiskFactor), score: 60 }
   } as PatientRiskScores,
   delta: {
     diabetes: -21,
@@ -237,21 +238,6 @@ export const MOCK_SIMULATION: SimulateResponse = {
   timeframe: "6 months"
 }
 
-// ─── MOCK EXTRACT ─────────────────────────────────────────────────────────────
-export const MOCK_EXTRACT_RESPONSE: ExtractResponse = {
-  mode: 'patient',
-  extracted_fields: {
-    glucose: 118,
-    cholesterol_total: 242,
-    cholesterol_hdl: 38,
-    cholesterol_ldl: 158,
-    triglycerides: 210,
-    systolic_bp: 138,
-    diastolic_bp: 88
-  },
-  unreadable_fields: ['weight', 'height'],
-  confidence: 'high'
-}
 
 // Legacy alias
 export const DEMO_PATIENT_ANALYSIS = MOCK_ANALYSIS

@@ -130,6 +130,12 @@ export interface SimulateResponse {
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+  time?: string
+  qr?: string[]
+  contextSnippet?: {
+    title: string
+    items: { l: string; v: string }[]
+  }
 }
 
 export interface ChatRequest {

@@ -102,11 +102,36 @@ function InputField({ label, val, type = 'text', hint }: { label: string; val: s
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function AccountPage() {
-  const { patient } = usePatientStore()
-  const p = patient || { name: 'Alex Morgan', gender: 'male', age: 34, weight: 92, height: 175 }
+  const { patient, analysis } = usePatientStore()
+  const p = patient
+  const a = analysis
 
   const [activeTab, setActiveTab] = useState<TabKey>('profile')
   const [genderMode, setGenderMode] = useState<'m' | 'f'>('m')
+
+  if (!p || !a) {
+    return (
+      <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: C.beige, color: C.ink, fontFamily: "'Inter', sans-serif" }}>
+        <Topbar />
+        <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+          <div className="w-24 h-24 border-[4px] border-black bg-white flex items-center justify-center text-[40px] mb-8 shadow-[8px_8px_0px_#000]">
+            👤
+          </div>
+          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4">Account Locked</h1>
+          <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-mu">
+            Your clinical account and twin telemetry are initialized during the medical intake process. Please complete your profile to unlock account management.
+          </p>
+          <Link href="/onboarding" 
+            className="px-10 py-5 border-[4px] border-black bg-green text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+            Complete Medical Intake &rarr;
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const initials = p.name ? p.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'AM'
+  const bmi = (p.weight / ((p.height / 100) ** 2)).toFixed(1)
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden" style={{ backgroundColor: C.beige, color: C.ink, fontFamily: "'Inter', sans-serif" }}>
@@ -132,12 +157,12 @@ export default function AccountPage() {
                   <span className="px-2 py-1 border-[2.5px] border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_#000]"
                     style={{ backgroundColor: C.green, color: C.white }}>Pro Plan</span>
                   <span className="px-2 py-1 border-[2.5px] border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_#000]"
-                    style={{ backgroundColor: C.white, color: C.ink }}>♂ Male · {p.age}y</span>
+                    style={{ backgroundColor: C.white, color: C.ink }}>{p.gender === 'male' ? '♂' : '♀'} {p.gender.charAt(0).toUpperCase() + p.gender.slice(1)} · {p.age}y</span>
                   <span className="px-2 py-1 border-[2.5px] border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_#000]"
-                    style={{ backgroundColor: C.white, color: C.ink }}>📍 Bangalore, IN</span>
+                    style={{ backgroundColor: C.white, color: C.ink }}>📍 Global Presence</span>
                 </div>
                 <div className="text-[11px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>
-                  Twin ID: VN-8823-M · Member Since 2025
+                  Twin ID: VN-{Math.floor(1000 + Math.random() * 9000)}-{p.name.charAt(0)} · Member Since 2025
                 </div>
               </div>
             </div>
@@ -256,7 +281,7 @@ export default function AccountPage() {
                       <InputField label="Last Name" val={p.name.split(' ')[1] || ''} />
                     </div>
                     <div className="grid grid-cols-2 gap-6 mb-6">
-                      <InputField label="Email Address" val="alex@vitanomy.health" hint="✓ VERIFIED" />
+                      <InputField label="Email Address" val={`${p.name.toLowerCase().replace(/\s+/g, '.')}@vitanomy.health`} hint="✓ VERIFIED" />
                       <InputField label="Phone Number" val="+91 98765 43210" type="tel" />
                     </div>
                     <div className="grid grid-cols-3 gap-6 mb-6">
@@ -281,11 +306,11 @@ export default function AccountPage() {
 
                     <div className="grid grid-cols-3 gap-5 mb-8">
                       {[
-                        { l: 'Fasting Glucose', v: '118', u: 'mg/dL', s: 'Pre-diabetic', i: '🩸', w: true },
-                        { l: 'Blood Pressure', v: '138/88', u: 'mmHg', s: 'Stage 1 HTN', i: '🫀', w: true },
+                        { l: 'Fasting Glucose', v: String(p.glucose || 0), u: 'mg/dL', s: (p.glucose || 0) > 100 ? 'Pre-diabetic' : 'Normal', i: '🩸', w: (p.glucose || 0) > 100 },
+                        { l: 'Blood Pressure', v: `${p.systolic_bp || 0}/${p.diastolic_bp || 0}`, u: 'mmHg', s: (p.systolic_bp || 0) > 130 ? 'Stage 1 HTN' : 'Normal', i: '🫀', w: (p.systolic_bp || 0) > 130 },
                         { l: 'Heart Rate', v: '76', u: 'bpm', s: 'Normal', i: '❤️', w: false },
                         { l: 'Estimated HbA1c', v: '5.8%', u: '3-mo avg', s: 'Borderline', i: '🧪', w: true },
-                        { l: 'BMI', v: '30.1', u: 'kg/m²', s: 'Obese Class I', i: '⚖️', w: true },
+                        { l: 'BMI', v: bmi, u: 'kg/m²', s: Number(bmi) > 25 ? 'Overweight' : 'Normal', i: '⚖️', w: Number(bmi) > 25 },
                         { l: 'Avg Sleep', v: '6.2h', u: 'last 7 days', s: 'Below 7h', i: '😴', w: true },
                       ].map(m => (
                         <div key={m.l} className="border-[3px] border-black p-4 flex flex-col shadow-[5px_5px_0px_#000]"

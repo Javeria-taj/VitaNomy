@@ -131,11 +131,34 @@ export default function DashboardPage() {
   const { patient, analysis, setMode } = usePatientStore()
   const [view, setView] = useState<'input' | 'results'>('input')
 
-  const p = patient || DEMO_PATIENT
-  const a = analysis || MOCK_ANALYSIS
+  const p = patient
+  const a = analysis
+  
+  if (!p || !a) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: C.beige, fontFamily: 'Inter, sans-serif' }}>
+        <Topbar />
+        <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+          <div className="w-24 h-24 border-[4px] border-black flex items-center justify-center text-[40px] mb-8 shadow-[8px_8px_0px_#000]"
+            style={{ backgroundColor: C.goldPale }}>
+            🧬
+          </div>
+          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4" style={{ color: C.ink }}>No Twin Detected</h1>
+          <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10" style={{ color: C.mu }}>
+            You haven't synchronized your clinical data yet. To generate your digital twin and see real-time health analysis, please complete the medical intake.
+          </p>
+          <Link href="/onboarding" 
+            className="px-10 py-5 border-[4px] border-black bg-green text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+            Begin Clinical Intake &rarr;
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   const rs = a.risk_scores
   const bmi = (p.weight / ((p.height / 100) ** 2)).toFixed(1)
-  const rs = a.risk_scores
+  const initials = p.name ? p.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'AM'
 
   const getStatus = (score: number) => score > 70 ? 'HIGH RISK' : score > 40 ? 'MODERATE' : 'LOW RISK'
   const getColor = (score: number) => score > 70 ? C.danger : score > 40 ? C.warn : C.ok
@@ -225,13 +248,16 @@ export default function DashboardPage() {
                   bmi={bmi}
                 />
               </div>
-              <div className="p-5 overflow-y-auto">
-                <SectionHeader icon="⚡" title="Status" />
-                <div className="p-4 border-[2px] border-black bg-goldPale shadow-[3px_3px_0px_#000]">
-                  <div className="text-[12px] font-black">TWIN READY</div>
-                  <div className="text-[10px] mt-1">Metabolic sync verified</div>
-                </div>
+            </div>
+
+            {/* Column 3: Status Tracking */}
+            <div className="p-5 overflow-y-auto bg-white">
+              <SectionHeader icon="⚡" title="Status" />
+              <div className="p-4 border-[2px] border-black bg-goldPale shadow-[3px_3px_0px_#000]">
+                <div className="text-[12px] font-black">TWIN READY</div>
+                <div className="text-[10px] mt-1">Metabolic sync verified</div>
               </div>
+            </div>
           </motion.div>
         ) : (
           <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -315,8 +341,8 @@ export default function DashboardPage() {
                     {a.insights.length} findings
                   </span>
                 </div>
-              )}
-                <div className="bg-white border-[2.5px] border-black shadow-[3px_3px_0px_#000] p-4">
+
+                <div className="p-4">
                   <div className="text-[12px] font-black border-b-[1px] border-black/10 pb-2 mb-3 tracking-wider">✦ AI TWIN INSIGHTS</div>
                   <div className="space-y-4">
                     {a.insights.map((ins, i) => (
@@ -328,6 +354,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

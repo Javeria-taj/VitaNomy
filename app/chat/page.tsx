@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePatientStore } from '@/store/patientStore'
+import { ChatMessage } from '@/types/patient'
 import { DEMO_PATIENT, MOCK_ANALYSIS } from '@/data/mockData'
 import { Topbar } from '@/components/Layout/Topbar'
 import { TypoAvatar } from '@/components/Common/TypoAvatar'
@@ -78,50 +79,47 @@ const renderFormattedText = (text: string, p: any, bmi: string) => {
   ))
 }
 
+const getScore = (val: any): number => typeof val === 'number' ? val : (val?.score ?? 0);
+
 // ─── Main Chat Component ───────────────────────────────────────────────────────
 export default function ChatPage() {
   const { patient, analysis, chatHistory, addChatMessage, setLoading, loadingChat } = usePatientStore()
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const p = patient || DEMO_PATIENT
+  if (!patient || !analysis) {
+    return (
+      <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: C.beige, color: C.black, fontFamily: "'Inter', sans-serif" }}>
+        <Topbar />
+        <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+          <div className="w-24 h-24 border-[4px] border-black bg-white flex items-center justify-center text-[40px] mb-8 shadow-[8px_8px_0px_#000]">
+            💬
+          </div>
+          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4">Chat Locked</h1>
+          <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-mu">
+            Dr. Vita needs your clinical twin data to provide personalized medical insights. Please complete your intake to start the conversation.
+          </p>
+          <Link href="/onboarding" 
+            className="px-10 py-5 border-[4px] border-black bg-darkGreen text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+            Initialize Twin &rarr;
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const p = patient
   const bmi = (p.weight / ((p.height / 100) ** 2)).toFixed(1)
 
-  // MOCK CHAT DATA
-  const MOCK_CHAT: any[] = [
+  // Combined chat history
+  const combinedChat: ChatMessage[] = chatHistory.length > 0 ? chatHistory : [
     {
       role: 'assistant',
-      content: `Hello, [NAME]. I've reviewed your latest twin data. A few things stand out — your **fasting glucose at [GLUCOSE] mg/dL** puts you in the pre-diabetic range, and your **BP of [BP]** is Stage 1 hypertension territory.\n\n[GENDER_SPECIFIC_NOTE]\n\nWhat would you like to explore today?`,
-      qr: ['Why is my glucose elevated?', 'Best foods for my BP', 'Exercise plan for men 34', 'Explain my HbA1c'],
-      time: '10:40 AM'
-    },
-    { role: 'user', content: "Why is my glucose elevated even though I don't eat that much sugar?", time: '10:42 AM' },
-    {
-      role: 'assistant',
-      content: `Great question, [NAME]. Blood glucose isn't just about direct sugar intake — it's more complex, especially for [GENDER] in their 30s.\n\nBased on your twin data, the most likely contributors are:\n\n**1. Insulin resistance** — Your BMI of [BMI] combined with a sedentary work lifestyle creates systemic insulin resistance. Even complex carbs spike glucose hard.\n\n**2. Cortisol spikes** — Your stress score (7/10 in last session) triggers gluconeogenesis — your liver literally makes glucose from non-sugar sources overnight.\n\n**3. Sleep quality** — People who sleep under 7 hours see a 15–20% rise in morning glucose. Your twin clocked 6.2hrs average last week.`,
-      contextSnippet: { 
-        title: 'Twin Baseline Constraints', 
-        items: [
-          { l: 'Your glucose', v: '[GLUCOSE] mg/dL ⚠️' },
-          { l: 'Normal range', v: '< 100 mg/dL' },
-          { l: 'Your sleep avg', v: '6.2 hrs / night' },
-          { l: 'Stress score', v: '7 / 10' }
-        ] 
-      },
-      qr: ['How to lower cortisol?', 'Sleep tips for glucose', 'Foods that spike insulin'],
-      time: '10:42 AM'
-    },
-    { role: 'user', content: "What's a realistic diet change I can actually stick to?", time: '10:45 AM' },
-    {
-      role: 'assistant',
-      content: `I'll keep this practical, [NAME]. Based on your profile and the **Clean Living simulation** that dropped your glucose to 98 mg/dL, here's what actually moved the needle:\n\n**The 3 changes with the highest impact:**\n\n🥗 **Swap white rice → bajra / oats** — Cuts your post-meal glucose spike by ~30%. Easy win for Indian meals.\n\n🧂 **Sodium under 1,500mg/day** — Your BP drops 8–12 points within 2 weeks. Read labels; bread is the #1 hidden source.\n\n☕ **No carbs in the first hour after waking** — Your cortisol is highest at 7–9am. Protein-first breakfast (eggs, paneer) blunts the glucose rise.\n\nThese three changes alone gave your twin a **+14 point health score** in the 1-month simulation.`,
-      qr: ['Protein-first breakfast ideas', 'What\'s a good sodium count?', 'Run a new simulation →'],
-      time: '10:46 AM'
+      content: `Hello, ${p.name.split(' ')[0]}. I've localized your clinical twin. Your **glucose of ${p.glucose} mg/dL** and **BP of ${p.systolic_bp}/${p.diastolic_bp}** are our primary focus. How can I help you optimize these today?`,
+      qr: ['Why is my glucose elevated?', 'How to lower my BP?', 'Run a risk simulation'],
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]
-
-  // Combine mock chat with user history
-  const combinedChat = [...MOCK_CHAT, ...chatHistory]
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -430,9 +428,9 @@ export default function ChatPage() {
             <div className="text-[12px] font-black uppercase tracking-[0.1em] mb-4 text-mu">Risk Snapshot</div>
             <div className="space-y-4">
               {[
-                { label: 'Diabetes', score: 44, icon: '🩸', col: '#FACC15' },
-                { label: 'Cardiac', score: 55, icon: '❤️', col: C.red },
-                { label: 'Hypertension', score: 49, icon: '🫀', col: '#FACC15' }
+                { label: 'Diabetes', score: getScore(analysis.risk_scores.diabetes), icon: '🩸', col: '#FACC15' },
+                { label: 'Cardiac', score: getScore(analysis.risk_scores.cardiac), icon: '❤️', col: C.red },
+                { label: 'Hypertension', score: getScore(analysis.risk_scores.hypertension), icon: '🫀', col: '#FACC15' }
               ].map(risk => (
                 <div key={risk.label} className="p-4 border-[3px] border-black shadow-[4px_4px_0px_#000]" style={{ backgroundColor: C.white }}>
                   <div className="flex justify-between items-center mb-2.5">

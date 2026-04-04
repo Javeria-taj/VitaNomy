@@ -178,31 +178,31 @@ function Step3({ data, update }: { data: PatientInput; update: (d: Partial<Patie
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-2 gap-4">
         <Field label="Systolic BP" hint="Upper number, mmHg (e.g. 120)">
-          <TextInput type="number" value={data.systolic_bp} onChange={(v) => update({ systolic_bp: Number(v) })} placeholder="e.g. 138" />
+          <TextInput type="number" value={data.systolic_bp || 0} onChange={(v) => update({ systolic_bp: Number(v) })} placeholder="e.g. 138" />
         </Field>
         <Field label="Diastolic BP" hint="Lower number, mmHg (e.g. 80)">
-          <TextInput type="number" value={data.diastolic_bp} onChange={(v) => update({ diastolic_bp: Number(v) })} placeholder="e.g. 88" />
+          <TextInput type="number" value={data.diastolic_bp || 0} onChange={(v) => update({ diastolic_bp: Number(v) })} placeholder="e.g. 88" />
         </Field>
       </div>
-      {data.systolic_bp > 0 && data.diastolic_bp > 0 && (
+      {(data.systolic_bp || 0) > 0 && (data.diastolic_bp || 0) > 0 && (
         <div className={`text-[12px] px-3 py-1.5 rounded-md inline-flex items-center gap-2 font-medium ${
-          data.systolic_bp >= 140 || data.diastolic_bp >= 90
+          (data.systolic_bp || 0) >= 140 || (data.diastolic_bp || 0) >= 90
             ? 'bg-red-50 text-red-600 border border-red-200'
-            : data.systolic_bp >= 130 || data.diastolic_bp >= 80
+            : (data.systolic_bp || 0) >= 130 || (data.diastolic_bp || 0) >= 80
             ? 'bg-amber-50 text-amber-600 border border-amber-200'
             : 'bg-green-50 text-green-600 border border-green-200'
         }`}>
           <div className="w-1.5 h-1.5 rounded-full bg-current" />
-          {data.systolic_bp >= 140 || data.diastolic_bp >= 90
+          {(data.systolic_bp || 0) >= 140 || (data.diastolic_bp || 0) >= 90
             ? 'Stage 2 Hypertension'
-            : data.systolic_bp >= 130 || data.diastolic_bp >= 80
+            : (data.systolic_bp || 0) >= 130 || (data.diastolic_bp || 0) >= 80
             ? 'Stage 1 Hypertension / Elevated'
             : 'Normal Range'}
         </div>
       )}
       <div className="grid grid-cols-2 gap-4">
         <Field label="Fasting Glucose" hint="mg/dL — taken after 8+ hrs fast">
-          <TextInput type="number" value={data.glucose} onChange={(v) => update({ glucose: Number(v) })} placeholder="e.g. 118" />
+          <TextInput type="number" value={data.glucose || 0} onChange={(v) => update({ glucose: Number(v) })} placeholder="e.g. 118" />
         </Field>
         <Field label="Total Cholesterol" hint="mg/dL — full lipid panel">
           <TextInput type="number" value={data.cholesterol_total || 0} onChange={(v) => update({ cholesterol_total: Number(v) })} placeholder="e.g. 242" />
@@ -216,7 +216,7 @@ function Step4({ data, update }: { data: PatientInput; update: (d: Partial<Patie
   return (
     <div className="flex flex-col gap-6">
       <Field label="Do you currently smoke?">
-        <ToggleField value={data.smoking} onChange={(v) => update({ smoking: v })} yesLabel="Yes, I smoke" noLabel="No / Quit" />
+        <ToggleField value={data.smoking || false} onChange={(v) => update({ smoking: v })} yesLabel="Yes, I smoke" noLabel="No / Quit" />
       </Field>
 
       <Field label="Exercise Level" hint="How often do you exercise per week?">
@@ -227,7 +227,7 @@ function Step4({ data, update }: { data: PatientInput; update: (d: Partial<Patie
             { value: 'moderate', label: '🚴 Moderate' },
             { value: 'heavy', label: '🏋 Heavy' },
           ]}
-          value={data.exercise}
+          value={data.exercise || 'none'}
           onChange={(v) => update({ exercise: v })}
         />
         <span className="text-[11px] text-text-secondary mt-1">
@@ -237,7 +237,7 @@ function Step4({ data, update }: { data: PatientInput; update: (d: Partial<Patie
 
       <Field label="Family history of heart disease or diabetes?">
         <ToggleField
-          value={data.family_history}
+          value={data.family_history || false}
           onChange={(v) => update({ family_history: v })}
           yesLabel="Yes, family history"
           noLabel="No history"
@@ -312,8 +312,15 @@ export function PatientForm() {
       }
     } catch {
       // Fall back to mock data for demo/hackathon
+      // But inject the user's actual name into the analysis strings
+      const dynamicAnalysis = {
+        ...MOCK_PATIENT_ANALYSIS,
+        patient_id: data.name.toLowerCase().replace(/\s+/g, '-'),
+        insights: MOCK_PATIENT_ANALYSIS.insights.map(i => i.replace(/\[NAME\]/g, data.name.split(' ')[0])),
+        recommendations: MOCK_PATIENT_ANALYSIS.recommendations.map(r => r.replace(/\[NAME\]/g, data.name.split(' ')[0]))
+      }
       setPatient(data)
-      setAnalysis(MOCK_PATIENT_ANALYSIS)
+      setAnalysis(dynamicAnalysis)
     } finally {
       setLoading('analyze', false)
       router.push('/dashboard')

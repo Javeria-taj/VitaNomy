@@ -6,6 +6,7 @@ import { SimulatorBody } from '@/components/Simulator/SimulatorBody'
 import { RiskGauge } from '@/components/Simulator/RiskGauge'
 import Link from 'next/link'
 import { usePatientStore } from '@/store/patientStore'
+import { AnyPatientInput, AnalyzeResponse, PatientInput } from '@/types/patient'
 import { Topbar } from '@/components/Layout/Topbar'
 
 const getScore = (val: any): number => typeof val === 'number' ? val : (val?.score ?? 0)
@@ -148,10 +149,10 @@ export default function SimulatorPage() {
   const { patient, analysis, setMode } = usePatientStore()
 
   // --- BASELINE (From Store or Default) ---
-  const baseline = (analysis?.risk_scores.mode === 'patient' && patient) ? {
+  const baseline = (analysis && patient) ? {
     vitals: {
-      bp: `${patient.systolic_bp ?? 120}/${patient.diastolic_bp ?? 80}`,
-      glucose: patient.glucose ?? 100,
+      bp: `${patient.systolic_bp || 120}/${patient.diastolic_bp || 80}`,
+      glucose: patient.glucose || 100,
       hr: 75,
       bmi: parseFloat((patient.weight / ((patient.height / 100) ** 2)).toFixed(1))
     },
@@ -160,14 +161,14 @@ export default function SimulatorPage() {
       cardiac: getScore(analysis.risk_scores.cardiac),
       hypertension: getScore(analysis.risk_scores.hypertension)
     },
-    score: 82
-  } : {
-    vitals: { bp: '138/88', glucose: 118, hr: 78, bmi: 30.1 },
-    risks: { diabetes: 44, cardiac: 55, hypertension: 49 },
     score: 72
-  }
+  } : null
 
-  const [sim, setSim] = useState(baseline)
+  const [sim, setSim] = useState(baseline || { vitals: { bp: '0/0', glucose: 0, hr: 0, bmi: 0 }, risks: { diabetes: 0, cardiac: 0, hypertension: 0 }, score: 0 })
+
+  useEffect(() => {
+    if (baseline) setSim(baseline)
+  }, [baseline])
 
   useEffect(() => {
     setMode('patient') // Use patient mode for simulator view
@@ -183,6 +184,7 @@ export default function SimulatorPage() {
   }, [patient, setMode])
 
   const runSimulation = () => {
+    if (!baseline || !patient) return
     setIsSimulating(true)
     setTimeout(() => {
       // Logic using baseline and adjustments
@@ -215,7 +217,29 @@ export default function SimulatorPage() {
 
   useEffect(() => { runSimulation() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const scoreDelta = sim.score - baseline.score
+  if (!patient || !analysis || !baseline) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F4F2E9', fontFamily: 'Inter, sans-serif' }}>
+        <Topbar />
+        <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+          <div className="w-24 h-24 border-[4px] border-black flex items-center justify-center text-[40px] mb-8 shadow-[8px_8px_0px_#000]"
+            style={{ backgroundColor: '#F7EDD0' }}>
+            ⚡
+          </div>
+          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4">Simulator Locked</h1>
+          <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-black/50">
+            The What-If Simulator requires your baseline twin data to run projections. Please complete your clinical intake to unlock this module.
+          </p>
+          <Link href="/onboarding" 
+            className="px-10 py-5 border-[4px] border-black bg-[#1B5E3B] text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+            Unlock Simulator &rarr;
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const scoreDelta = sim.score - (baseline?.score || 0)
 
   return (
     <div
@@ -244,7 +268,7 @@ export default function SimulatorPage() {
             style={{ backgroundColor: '#2E7D52', color: 'white', boxShadow: '3px 3px 0px #000000' }}
           >
             <div className="w-2 h-2 bg-[#7EC8A0]" style={{ animation: 'pulse 2s infinite' }} />
-            Twin Active · {patient?.name.split(' ')[0] || 'User'}
+            Twin Active · {patient.name.split(' ')[0]}
           </div>
           <button
             onClick={() => { setCal(1800); setCarb(180); setSodium(1500); setExercise(4); runSimulation() }}
