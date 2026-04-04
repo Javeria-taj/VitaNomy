@@ -6,6 +6,7 @@ import { SimulatorBody } from '@/components/Simulator/SimulatorBody'
 import { RiskGauge } from '@/components/Simulator/RiskGauge'
 import Link from 'next/link'
 import { usePatientStore } from '@/store/patientStore'
+import { PatientInput, PatientRiskScores } from '@/types/patient'
 
 // ─── STYLE CONSTANTS ──────────────────────────────────────────────────────────
 const SECTION_LABEL = "text-[10px] font-black uppercase tracking-[0.18em] text-black/40 mb-3 block"
@@ -145,15 +146,19 @@ export default function SimulatorPage() {
   const { patient, analysis, setMode } = usePatientStore()
 
   // --- BASELINE (From Store or Default) ---
-  const baseline = (analysis && patient) ? {
+  const baseline = (analysis?.risk_scores.mode === 'patient' && patient) ? {
     vitals: { 
-      bp: `${patient.systolic_bp}/${patient.diastolic_bp}`, 
-      glucose: patient.glucose, 
+      bp: `${(patient as PatientInput).systolic_bp}/${(patient as PatientInput).diastolic_bp}`, 
+      glucose: (patient as PatientInput).glucose, 
       hr: 75, 
       bmi: parseFloat((patient.weight / ((patient.height / 100) ** 2)).toFixed(1))
     },
-    risks: analysis.risk_scores,
-    score: 82 // Mock overall health score
+    risks: {
+      diabetes: (analysis.risk_scores as PatientRiskScores).diabetes.score,
+      cardiac: (analysis.risk_scores as PatientRiskScores).cardiac.score,
+      hypertension: (analysis.risk_scores as PatientRiskScores).hypertension.score
+    },
+    score: 82 
   } : {
     vitals: { bp: '138/88', glucose: 118, hr: 78, bmi: 30.1 },
     risks: { diabetes: 44, cardiac: 55, hypertension: 49 },
@@ -162,15 +167,15 @@ export default function SimulatorPage() {
 
   const [sim, setSim] = useState(baseline)
 
-  // Sync initial state with patient data
   useEffect(() => {
-    setMode('simulator')
-    if (patient) {
+    setMode('patient') // Use patient mode for simulator view
+    if (patient && patient.mode === 'patient') {
+      const p = patient as PatientInput
       setCal(2000)
-      setCarb(patient.exercise === 'none' ? 250 : 180)
-      setSodium(patient.systolic_bp > 130 ? 1500 : 2300)
-      setExercise(patient.exercise === 'none' ? 0 : patient.exercise === 'light' ? 2 : 4)
-      setIsSmoker(patient.smoking)
+      setCarb(p.exercise === 'none' ? 250 : 180)
+      setSodium(p.systolic_bp > 130 ? 1500 : 2300)
+      setExercise(p.exercise === 'none' ? 0 : p.exercise === 'light' ? 2 : 4)
+      setIsSmoker(p.smoking)
     }
   }, [patient, setMode])
 
@@ -178,9 +183,10 @@ export default function SimulatorPage() {
     setIsSimulating(true)
     setTimeout(() => {
       // Logic using baseline and adjustments
-      const newBpSys = Math.max(110, (patient?.systolic_bp || 138) - (exercise * 2) - (isMeds ? 10 : 0) + (sodium > 3000 ? 8 : 0) + (stress > 7 ? 6 : 0))
-      const newBpDia = Math.max(70, (patient?.diastolic_bp || 88) - (exercise * 1) - (isMeds ? 5 : 0) + (sodium > 3000 ? 4 : 0))
-      const newGlucose = Math.max(85, (patient?.glucose || 118) - (carb < 100 ? 15 : 0) - (exercise * 3) + (cal > 2500 ? 10 : 0))
+      const p = patient as PatientInput
+      const newBpSys = Math.max(110, (p?.systolic_bp || 138) - (exercise * 2) - (isMeds ? 10 : 0) + (sodium > 3000 ? 8 : 0) + (stress > 7 ? 6 : 0))
+      const newBpDia = Math.max(70, (p?.diastolic_bp || 88) - (exercise * 1) - (isMeds ? 5 : 0) + (sodium > 3000 ? 4 : 0))
+      const newGlucose = Math.max(85, (p?.glucose || 118) - (carb < 100 ? 15 : 0) - (exercise * 3) + (cal > 2500 ? 10 : 0))
       const newHr = Math.max(60, 78 - (exercise * 2) - (sleep > 7 ? 4 : 0) + (stress > 7 ? 8 : 0))
       const newBmi = Math.max(22, (baseline.vitals.bmi) - (exercise * 0.5) - (cal < 1500 ? 1.5 : 0) + (cal > 2500 ? 1 : 0))
       

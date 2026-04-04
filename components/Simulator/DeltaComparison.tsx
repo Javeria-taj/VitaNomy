@@ -4,6 +4,7 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { usePatientStore } from '@/store/patientStore'
 import { MOCK_SIMULATION } from '@/data/mockData'
+import { PatientRiskScores } from '@/types/patient'
 
 // Simplified visual delta bar
 function DeltaBar({ name, original, projected, deltaLabel }: { name: string, original: number, projected: number, deltaLabel: string }) {
@@ -34,7 +35,10 @@ function DeltaBar({ name, original, projected, deltaLabel }: { name: string, ori
 }
 
 export function DeltaComparison() {
-  const simulation = MOCK_SIMULATION // Eventually comes from API/Store based on selection
+  const { simulation: storeSim } = usePatientStore()
+  const simulation = storeSim || MOCK_SIMULATION 
+  const original = simulation.original_risks as PatientRiskScores
+  const projected = simulation.projected_risks as PatientRiskScores
 
   return (
     <div className="p-[18px] bg-[#f7faf8] rounded-xl border-[0.5px] border-[#c0dd97]">
@@ -44,22 +48,22 @@ export function DeltaComparison() {
       
       <DeltaBar 
         name="Diabetes risk" 
-        original={simulation.original_risks.diabetes} 
-        projected={simulation.projected_risks.diabetes} 
+        original={original.diabetes.score} 
+        projected={projected.diabetes.score} 
         deltaLabel="↓ 21 points" 
       />
       
       <DeltaBar 
         name="Cardiac risk" 
-        original={simulation.original_risks.cardiac} 
-        projected={simulation.projected_risks.cardiac} 
+        original={original.cardiac.score} 
+        projected={projected.cardiac.score} 
         deltaLabel="↓ 19 points" 
       />
       
       <DeltaBar 
         name="Hypertension risk" 
-        original={simulation.original_risks.hypertension} 
-        projected={simulation.projected_risks.hypertension} 
+        original={original.hypertension.score} 
+        projected={projected.hypertension.score} 
         deltaLabel="↓ 19 points" 
       />
       

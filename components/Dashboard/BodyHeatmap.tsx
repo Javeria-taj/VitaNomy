@@ -1,9 +1,7 @@
-
-'use client'
-
 import React from 'react'
 import { usePatientStore } from '@/store/patientStore'
 import { motion } from 'framer-motion'
+import { PatientRiskScores, AthleteRiskScores } from '@/types/patient'
 
 export function BodyHeatmap() {
   const { analysis } = usePatientStore()
@@ -39,7 +37,7 @@ export function BodyHeatmap() {
           {/* Cardiac */}
           <motion.rect 
             x="50" y="50" width="20" height="15" 
-            fill={scores.cardiac > 60 ? '#E07A5F' : '#C9A84C'}
+            fill={(scores.mode === 'patient' ? (scores as PatientRiskScores).cardiac.score : (scores as AthleteRiskScores).cardiovascular.score) > 60 ? '#E07A5F' : '#C9A84C'}
             animate={{ opacity: [1, 0, 1] }}
             transition={{ duration: 0.2, repeat: Infinity, repeatType: "reverse" }}
           />
@@ -47,7 +45,7 @@ export function BodyHeatmap() {
           {/* Abdominal/Diabetes */}
           <motion.rect 
             x="45" y="75" width="30" height="20" 
-            fill={scores.diabetes > 60 ? '#E07A5F' : '#C9A84C'}
+            fill={(scores.mode === 'patient' ? (scores as PatientRiskScores).diabetes.score : (scores as AthleteRiskScores).hepatotoxicity.score) > 60 ? '#E07A5F' : '#C9A84C'}
             animate={{ opacity: [1, 0, 1] }}
             transition={{ duration: 0.35, repeat: Infinity, repeatType: "reverse", delay: 0.1 }}
           />
@@ -61,8 +59,8 @@ export function BodyHeatmap() {
           <path d="M75 105 L75 190 L90 190" fill="none" stroke="#F4F2E9" strokeWidth="2.5" />
 
           {/* Annotations */}
-          <text x="60" y="61" textAnchor="middle" fontSize="6" fontWeight="900" fill="white">CVR: {scores.cardiac}%</text>
-          <text x="60" y="87" textAnchor="middle" fontSize="6" fontWeight="900" fill="white">T2D: {scores.diabetes}%</text>
+          <text x="60" y="61" textAnchor="middle" fontSize="6" fontWeight="900" fill="white">CVR: {scores.mode === 'patient' ? (scores as PatientRiskScores).cardiac.score : (scores as AthleteRiskScores).cardiovascular.score}%</text>
+          <text x="60" y="87" textAnchor="middle" fontSize="6" fontWeight="900" fill="white">T2D: {scores.mode === 'patient' ? (scores as PatientRiskScores).diabetes.score : (scores as AthleteRiskScores).hepatotoxicity.score}%</text>
         </svg>
       </div>
       

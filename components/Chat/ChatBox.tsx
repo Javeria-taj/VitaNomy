@@ -33,7 +33,7 @@ export function ChatBox() {
       setLoading('chat', false)
       addChatMessage({ 
         role: 'assistant', 
-        content: `Based on your profile (Age ${patient?.age}, BP ${patient?.systolic_bp}/${patient?.diastolic_bp}), this specific intervention would likely shift your ${analysis?.overall_risk.toLowerCase()} risk profile. Historical simulations show a 12% improvement in cardiac strain for similar cohorts.`
+        content: `Based on your profile (Age ${patient?.age}, BP ${patient?.mode === 'patient' ? patient.systolic_bp : 0}/${patient?.mode === 'patient' ? patient.diastolic_bp : 0}), this specific intervention would likely shift your ${analysis?.risk_scores.overall_risk.toLowerCase()} risk profile. Historical simulations show a 12% improvement in cardiac strain for similar cohorts.`
       })
     }, 1200)
   }
@@ -49,7 +49,7 @@ export function ChatBox() {
           </span>
         </div>
         <div className="text-[10px] font-black text-[#C9A84C] uppercase tracking-widest">
-          {analysis?.overall_risk || 'NO'} RISK PROFILE
+          {analysis?.risk_scores.overall_risk || 'NO'} RISK PROFILE
         </div>
       </div>
 
