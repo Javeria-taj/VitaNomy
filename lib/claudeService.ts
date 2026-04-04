@@ -57,6 +57,18 @@ function calculateBMI(weight: number, height: number): number {
   return Number((weight / (hM * hM)).toFixed(1));
 }
 
+function getReferenceFlag(value: number, low: number, high: number): string {
+  if (value < low) return '⚠ LOW'
+  if (value > high) return '⚠ HIGH'
+  return '✓ NORMAL'
+}
+
+function formatCycleStatus(currentWeek: number, totalWeeks: number): string {
+  if (currentWeek > totalWeeks) return '⚠ EXCEEDED PLANNED DURATION'
+  if (currentWeek / totalWeeks >= 0.8) return '⚠ NEAR END OF CYCLE'
+  return `Week ${currentWeek}/${totalWeeks}`
+}
+
 export async function getInsights(
   patient: AnyPatientInput,
   scores: AnyRiskScores
@@ -74,58 +86,134 @@ export async function getInsights(
       const bmi = calculateBMI(p.weight, p.height);
       const overall = scores.overall_risk;
       
-      prompt = `You are a clinical AI assistant analyzing a patient health profile.
-Patient: ${p.age}yr ${p.gender}, BMI: ${bmi}
-Vitals: BP ${p.systolic_bp || 0}/${p.diastolic_bp || 0}, Glucose ${p.glucose || 0} mg/dL,
-Total Cholesterol ${p.cholesterol_total || 0} mg/dL, HDL ${p.cholesterol_hdl || 0} mg/dL
-Lifestyle: Smoking=${p.smoking}, Exercise=${p.exercise}, Alcohol=${p.alcohol}
-Risk Scores with confidence:
-- Diabetes: ${s.diabetes.score} (${s.diabetes.confidence_interval[0]}–${s.diabetes.confidence_interval[1]}, ${s.diabetes.confidence})
-  Drivers: ${s.diabetes.primary_drivers.join(', ')}
-- Cardiac: ${s.cardiac.score} (${s.cardiac.confidence_interval[0]}–${s.cardiac.confidence_interval[1]}, ${s.cardiac.confidence})
-  Drivers: ${s.cardiac.primary_drivers.join(', ')}
-- Hypertension: ${s.hypertension.score} (${s.hypertension.confidence_interval[0]}–${s.hypertension.confidence_interval[1]}, ${s.hypertension.confidence})
-  Drivers: ${s.hypertension.primary_drivers.join(', ')}
-Overall risk: ${overall}
+      prompt = `CLINICAL CASE SUMMARY
+━━━━━━━━━━━━━━━━━━━━
+Patient: ${p.age}yr ${p.gender}, BMI: ${bmi} ${getReferenceFlag(bmi, 18.5, 24.9)}
+Presentation: Metabolic and cardiovascular risk assessment
+
+LABORATORY FINDINGS
+━━━━━━━━━━━━━━━━━━━━
+Metabolic Panel:
+  Fasting Glucose:      ${p.glucose ?? 'N/A'} mg/dL      [Ref: 70–99]   ${p.glucose ? getReferenceFlag(p.glucose, 70, 99) : ''}
+  Total Cholesterol:    ${p.cholesterol_total ?? 'N/A'} mg/dL   [Ref: <200]    ${p.cholesterol_total ? getReferenceFlag(p.cholesterol_total, 0, 199) : ''}
+  HDL Cholesterol:      ${p.cholesterol_hdl ?? 'N/A'} mg/dL      [Ref: >60]     ${p.cholesterol_hdl ? getReferenceFlag(p.cholesterol_hdl, 60, 999) : ''}
+  LDL Cholesterol:      ${p.cholesterol_ldl ?? 'N/A'} mg/dL      [Ref: <100]    ${p.cholesterol_ldl ? getReferenceFlag(p.cholesterol_ldl, 0, 99) : ''}
+  Triglycerides:        ${p.triglycerides ?? 'N/A'} mg/dL      [Ref: <150]    ${p.triglycerides ? getReferenceFlag(p.triglycerides, 0, 149) : ''}
+
+Cardiovascular:
+  Blood Pressure:       ${p.systolic_bp ?? 'N/A'}/${p.diastolic_bp ?? 'N/A'} mmHg   [Ref: <120/80]  ${p.systolic_bp ? getReferenceFlag(p.systolic_bp, 0, 119) : ''}
+  BMI:                  ${bmi} kg/m²          [Ref: 18.5–24.9]
+
+Lifestyle Factors:
+  Smoking:              ${p.smoking ? '⚠ YES — active smoker' : '✓ Non-smoker'}
+  Exercise:             ${p.exercise} ${p.exercise === 'none' ? '⚠ SEDENTARY' : ''}
+  Alcohol:              ${p.alcohol} ${p.alcohol === 'heavy' ? '⚠ HEAVY USE' : ''}
+  Family History:       ${p.family_history ? '⚠ POSITIVE' : '✓ Negative'}
+
+Existing Conditions:    ${p.existing_conditions?.length ? p.existing_conditions.join(', ') : 'None reported'}
+Current Medications:    ${p.current_medications?.length ? p.current_medications.join(', ') : 'None reported'}
+
+RISK STRATIFICATION
+━━━━━━━━━━━━━━━━━━━━
+Diabetes:       ${s.diabetes.score}/100  CI: [${s.diabetes.confidence_interval[0]}–${s.diabetes.confidence_interval[1]}]  Confidence: ${s.diabetes.confidence}
+  Drivers: ${s.diabetes.primary_drivers.join(' | ')}
+
+Cardiac:        ${s.cardiac.score}/100  CI: [${s.cardiac.confidence_interval[0]}–${s.cardiac.confidence_interval[1]}]  Confidence: ${s.cardiac.confidence}
+  Drivers: ${s.cardiac.primary_drivers.join(' | ')}
+
+Hypertension:   ${s.hypertension.score}/100  CI: [${s.hypertension.confidence_interval[0]}–${s.hypertension.confidence_interval[1]}]  Confidence: ${s.hypertension.confidence}
+  Drivers: ${s.hypertension.primary_drivers.join(' | ')}
+
+Overall Risk:   ${overall}
+
+CLINICAL TASK
+━━━━━━━━━━━━━━━━━━━━
+Analyze the interaction between risk factors — not just individual values.
+Identify which findings are urgent vs long-term concerns.
+Provide specific, measurable interventions ranked by impact.
+
+You are a clinical AI. Never diagnose. Never prescribe medications.
 Return ONLY valid JSON, no markdown, no backticks:
-{"insights":[3-5 specific clinical observations],
-"recommendations":[3-5 actionable items ranked by impact]}`;
+{"insights":["3-5 specific clinical observations referencing actual values"],
+"recommendations":["3-5 actionable items, specific and measurable"]}`;
 
     } else {
       const a = patient as AthleteInput;
       const s = scores as AthleteRiskScores;
       const overall = scores.overall_risk;
-      
-      const compoundsStr = (a.compounds || []).map(c => 
-        `- ${c.name}: ${c.dose_mg}mg ${c.frequency} (${c.route}),
-   week ${c.cycle_week_current} of ${c.cycle_week_total}${c.is_pct ? ' [PCT]' : ''}`
-      ).join('\n');
 
-      prompt = `You are a sports medicine AI assistant specializing in
-performance-enhancing compound analysis and harm reduction.
-Athlete: ${a.age}yr ${a.gender}, ${a.weight}kg, ${a.body_fat_percent || 0}% BF
-Bloodwork: Hematocrit ${a.hematocrit || 0}%, ALT ${a.alt || 0} U/L, AST ${a.ast || 0} U/L,
-HDL ${a.cholesterol_hdl || 0} mg/dL, Total Cholesterol ${a.cholesterol_total || 0} mg/dL,
-LH ${a.lh || 0} IU/L, FSH ${a.fsh || 0} IU/L, Estradiol ${a.estradiol || 0} pg/mL,
-Testosterone Total ${a.testosterone_total || 0} ng/dL
-Current compounds:
-${compoundsStr}
-Risk Scores: 
-- Cardiovascular: ${s.cardiovascular.score} (${s.cardiovascular.confidence_interval[0]}–${s.cardiovascular.confidence_interval[1]}, ${s.cardiovascular.confidence})
-  Drivers: ${s.cardiovascular.primary_drivers.join(', ')}
-- Hepatotoxicity: ${s.hepatotoxicity.score} (${s.hepatotoxicity.confidence_interval[0]}–${s.hepatotoxicity.confidence_interval[1]}, ${s.hepatotoxicity.confidence})
-  Drivers: ${s.hepatotoxicity.primary_drivers.join(', ')}
-- Endocrine Suppression: ${s.endocrine_suppression.score} (${s.endocrine_suppression.confidence_interval[0]}–${s.endocrine_suppression.confidence_interval[1]}, ${s.endocrine_suppression.confidence})
-  Drivers: ${s.endocrine_suppression.primary_drivers.join(', ')}
-- Hematological: ${s.hematological.score} (${s.hematological.confidence_interval[0]}–${s.hematological.confidence_interval[1]}, ${s.hematological.confidence})
-  Drivers: ${s.hematological.primary_drivers.join(', ')}
-Overall risk: ${overall}
-Do not moralize about compound use. Focus on harm reduction,
-biomarker interpretation, and clinical observations.
+      const compoundsStr = (a.compounds || []).map(c =>
+        `  ${c.name} (${c.compound_type})
+    Dose:         ${c.dose_mg}mg ${c.frequency} via ${c.route}
+    Cycle status: ${formatCycleStatus(c.cycle_week_current, c.cycle_week_total)}
+    PCT compound: ${c.is_pct ? 'Yes' : 'No'}`
+      ).join('\n\n')
+
+      prompt = `ATHLETE HEALTH MONITORING REPORT
+━━━━━━━━━━━━━━━━━━━━
+Athlete: ${a.age}yr ${a.gender}, ${a.weight}kg${a.body_fat_percent ? `, ${a.body_fat_percent}% BF` : ''}
+Context: ${a.competition_prep ? '⚠ COMPETITION PREP ACTIVE' : 'Off-season'}
+PCT Active: ${a.pct_active ? '✓ YES' : '⚠ NO'}
+Training Experience: ${a.training_years} years
+
+BLOODWORK PANEL
+━━━━━━━━━━━━━━━━━━━━
+Liver Enzymes:
+  ALT:                  ${a.alt ?? 'N/A'} U/L          [Ref: <40]     ${a.alt ? getReferenceFlag(a.alt, 0, 40) : ''}
+  AST:                  ${a.ast ?? 'N/A'} U/L          [Ref: <40]     ${a.ast ? getReferenceFlag(a.ast, 0, 40) : ''}
+
+Hematological:
+  Hematocrit:           ${a.hematocrit ?? 'N/A'}%           [Ref: 38–50]   ${a.hematocrit ? getReferenceFlag(a.hematocrit, 38, 50) : ''}
+  Hemoglobin:           ${a.hemoglobin ?? 'N/A'} g/dL        [Ref: 13.5–17.5] ${a.hemoglobin ? getReferenceFlag(a.hemoglobin, 13.5, 17.5) : ''}
+  RBC:                  ${a.rbc ?? 'N/A'} M/uL         [Ref: 4.5–6.0] ${a.rbc ? getReferenceFlag(a.rbc, 4.5, 6.0) : ''}
+
+Lipids:
+  HDL:                  ${a.cholesterol_hdl ?? 'N/A'} mg/dL       [Ref: >40]     ${a.cholesterol_hdl ? getReferenceFlag(a.cholesterol_hdl, 40, 999) : ''}
+  Total Cholesterol:    ${a.cholesterol_total ?? 'N/A'} mg/dL       [Ref: <200]    ${a.cholesterol_total ? getReferenceFlag(a.cholesterol_total, 0, 199) : ''}
+  LDL:                  ${a.cholesterol_ldl ?? 'N/A'} mg/dL       [Ref: <100]    ${a.cholesterol_ldl ? getReferenceFlag(a.cholesterol_ldl, 0, 99) : ''}
+  Triglycerides:        ${a.triglycerides ?? 'N/A'} mg/dL       [Ref: <150]    ${a.triglycerides ? getReferenceFlag(a.triglycerides, 0, 149) : ''}
+
+Endocrine Panel:
+  Testosterone Total:   ${a.testosterone_total ?? 'N/A'} ng/dL      [Ref: 300–1000] ${a.testosterone_total ? getReferenceFlag(a.testosterone_total, 300, 1000) : ''}
+  Testosterone Free:    ${a.testosterone_free ?? 'N/A'} pg/mL       [Ref: 9–30]    ${a.testosterone_free ? getReferenceFlag(a.testosterone_free, 9, 30) : ''}
+  Estradiol:            ${a.estradiol ?? 'N/A'} pg/mL       [Ref: 10–40]   ${a.estradiol ? getReferenceFlag(a.estradiol, 10, 40) : ''}
+  LH:                   ${a.lh ?? 'N/A'} IU/L         [Ref: 1.5–9.3] ${a.lh ? getReferenceFlag(a.lh, 1.5, 9.3) : ''}
+  FSH:                  ${a.fsh ?? 'N/A'} IU/L         [Ref: 1.5–12.4] ${a.fsh ? getReferenceFlag(a.fsh, 1.5, 12.4) : ''}
+
+Kidney:
+  Creatinine:           ${a.creatinine ?? 'N/A'} mg/dL       [Ref: 0.7–1.2] ${a.creatinine ? getReferenceFlag(a.creatinine, 0.7, 1.2) : ''}
+
+CURRENT COMPOUNDS
+━━━━━━━━━━━━━━━━━━━━
+${compoundsStr || 'None reported'}
+
+RISK STRATIFICATION
+━━━━━━━━━━━━━━━━━━━━
+Cardiovascular:         ${s.cardiovascular.score}/100  CI: [${s.cardiovascular.confidence_interval[0]}–${s.cardiovascular.confidence_interval[1]}]  Confidence: ${s.cardiovascular.confidence}
+  Drivers: ${s.cardiovascular.primary_drivers.join(' | ')}
+
+Hepatotoxicity:         ${s.hepatotoxicity.score}/100  CI: [${s.hepatotoxicity.confidence_interval[0]}–${s.hepatotoxicity.confidence_interval[1]}]  Confidence: ${s.hepatotoxicity.confidence}
+  Drivers: ${s.hepatotoxicity.primary_drivers.join(' | ')}
+
+Endocrine Suppression:  ${s.endocrine_suppression.score}/100  CI: [${s.endocrine_suppression.confidence_interval[0]}–${s.endocrine_suppression.confidence_interval[1]}]  Confidence: ${s.endocrine_suppression.confidence}
+  Drivers: ${s.endocrine_suppression.primary_drivers.join(' | ')}
+
+Hematological:          ${s.hematological.score}/100  CI: [${s.hematological.confidence_interval[0]}–${s.hematological.confidence_interval[1]}]  Confidence: ${s.hematological.confidence}
+  Drivers: ${s.hematological.primary_drivers.join(' | ')}
+
+Overall Risk:           ${overall}
+
+CLINICAL TASK
+━━━━━━━━━━━━━━━━━━━━
+Interpret biomarker deviations in the context of the specific compounds listed.
+Identify causal links between compounds and abnormal values.
+Do not moralize about compound use — focus entirely on harm reduction.
+Never prescribe. Never diagnose.
+
 Return ONLY valid JSON, no markdown, no backticks:
-{"insights":[3-5 biomarker observations],
-"recommendations":[3-5 harm reduction actions],
-"causation_flags":[2-4 specific compound-to-biomarker causal observations]}`;
+{"insights":["3-5 specific biomarker observations referencing actual values and compounds"],
+"recommendations":["3-5 harm reduction actions, specific and actionable"],
+"causation_flags":["2-4 specific compound-to-biomarker causal observations with values"]}`;
     }
 
     const message = await anthropic.messages.create({
