@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Healthcare Digital Twin — 24hr Hackathon Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060910;
+    --surface: #0d1117;
+    --surface2: #131920;
+    --border: #1e2a35;
+    --accent-blue: #00aaff;
+    --accent-cyan: #00e5cc;
+    --accent-green: #00ff88;
+    --accent-amber: #ffaa00;
+    --accent-red: #ff4466;
+    --text: #e8f0f8;
+    --text-muted: #5a7a96;
+    --text-mid: #8aa4bc;
+    --fe-color: #00aaff;
+    --be-color: #00e5cc;
+    --shared-color: #00ff88;
+    --fe-bg: rgba(0, 170, 255, 0.06);
+    --be-bg: rgba(0, 229, 204, 0.06);
+    --shared-bg: rgba(0, 255, 136, 0.06);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0, 170, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 170, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── GLOW ORBS ── */
+  body::after {
+    content: '';
+    position: fixed;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,170,255,0.06) 0%, transparent 70%);
+    top: -200px; left: -200px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb-2 {
+    position: fixed;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(0,229,204,0.05) 0%, transparent 70%);
+    bottom: -150px; right: -150px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── LAYOUT ── */
+  .wrapper { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 80px 0 60px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.15em;
+    color: var(--accent-cyan);
+    background: rgba(0,229,204,0.08);
+    border: 1px solid rgba(0,229,204,0.2);
+    padding: 6px 14px; border-radius: 4px;
+    margin-bottom: 28px;
+  }
+
+  .hero-tag::before { content: '▶'; font-size: 8px; }
+
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 span.grad {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: 17px;
+    color: var(--text-mid);
+    max-width: 600px;
+    margin-bottom: 40px;
+    font-weight: 400;
+  }
+
+  .hero-stats {
+    display: flex; gap: 40px; flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .stat-value {
+    font-size: 28px; font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .stat-label {
+    font-size: 11px; letter-spacing: 0.1em;
+    color: var(--text-muted); text-transform: uppercase;
+  }
+
+  /* ── NAV PILLS ── */
+  .nav-pills {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: rgba(6,9,16,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .nav-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 7px 16px; border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .nav-pill:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+  .nav-pill.fe { border-color: rgba(0,170,255,0.3); color: var(--fe-color); }
+  .nav-pill.be { border-color: rgba(0,229,204,0.3); color: var(--be-color); }
+  .nav-pill.shared { border-color: rgba(0,255,136,0.3); color: var(--shared-color); }
+
+  /* ── SECTIONS ── */
+  .section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+  .section:last-child { border-bottom: none; }
+
+  .section-header { margin-bottom: 40px; }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.2em;
+    color: var(--text-muted); text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .section-title {
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 800; letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .section-desc {
+    margin-top: 10px; font-size: 15px;
+    color: var(--text-mid); max-width: 640px;
+  }
+
+  /* ── ROLE BADGES ── */
+  .role-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 3px;
+    font-weight: 500;
+  }
+
+  .role-badge.fe { background: var(--fe-bg); color: var(--fe-color); border: 1px solid rgba(0,170,255,0.2); }
+  .role-badge.be { background: var(--be-bg); color: var(--be-color); border: 1px solid rgba(0,229,204,0.2); }
+  .role-badge.shared { background: var(--shared-bg); color: var(--shared-color); border: 1px solid rgba(0,255,136,0.2); }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  .card.fe-card { border-left: 3px solid var(--fe-color); }
+  .card.be-card { border-left: 3px solid var(--be-color); }
+  .card.shared-card { border-left: 3px solid var(--shared-color); }
+  .card.warn-card { border-left: 3px solid var(--accent-amber); }
+  .card.pitch-card { border-left: 3px solid var(--accent-red); }
+
+  .card h3 {
+    font-size: 16px; font-weight: 700;
+    margin-bottom: 14px; letter-spacing: -0.01em;
+  }
+
+  .card p { font-size: 14px; color: var(--text-mid); line-height: 1.7; }
+
+  /* ── CODE BLOCKS ── */
+  pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px; line-height: 1.7;
+    background: #080d12;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 16px 0;
+    color: #a8c8e8;
+    tab-size: 2;
+  }
+
+  pre .comment { color: #3a5570; }
+  pre .keyword { color: var(--accent-cyan); }
+  pre .string { color: var(--accent-green); }
+  pre .type { color: var(--accent-amber); }
+  pre .fn { color: var(--accent-blue); }
+  pre .num { color: #ff8866; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: rgba(0,170,255,0.08);
+    color: var(--accent-blue);
+    padding: 2px 7px; border-radius: 3px;
+  }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 60px; top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, var(--border) 5%, var(--border) 95%, transparent);
+  }
+
+  .timeline-row {
+    display: flex; gap: 0; margin-bottom: 4px;
+    position: relative;
+  }
+
+  .timeline-row::before {
+    content: '';
+    position: absolute;
+    left: 60px; top: 50%;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    transform: translate(-3.5px, -50%);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    z-index: 1;
+  }
+
+  .timeline-row:hover::before { border-color: var(--accent-blue); background: var(--accent-blue); }
+
+  .t-hours {
+    flex-shrink: 0; width: 60px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--text-muted);
+    padding: 14px 0;
+    text-align: right; padding-right: 18px;
+  }
+
+  .t-content {
+    flex: 1; padding: 10px 0 10px 28px;
+    border-bottom: 1px solid rgba(30,42,53,0.5);
+  }
+
+  .t-task { font-size: 14px; font-weight: 600; }
+  .t-note { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .t-both .t-content { border-left: 2px solid rgba(0,255,136,0.4); }
+  .t-fe .t-content { border-left: 2px solid rgba(0,170,255,0.4); }
+  .t-be .t-content { border-left: 2px solid rgba(0,229,204,0.4); }
+  .t-sync .t-content {
+    border-left: 2px solid rgba(255,170,0,0.6);
+    background: rgba(255,170,0,0.03); border-radius: 0 6px 6px 0;
+  }
+
+  /* ── GRID 2-COL ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ── FOLDER TREE ── */
+  .tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px; line-height: 2;
+    background: #080d12;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+
+  .tree-fe { color: var(--fe-color); }
+  .tree-be { color: var(--be-color); }
+  .tree-shared { color: var(--shared-color); }
+  .tree-dim { color: var(--text-muted); }
+  .tree-comment { color: #3a5570; font-size: 11px; }
+
+  /* ── CHECKLIST ── */
+  .checklist { list-style: none; }
+  .checklist li {
+    font-size: 14px; color: var(--text-mid);
+    padding: 9px 0; border-bottom: 1px solid rgba(30,42,53,0.6);
+    display: flex; align-items: flex-start; gap: 12px;
+    line-height: 1.5;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before {
+    content: '□';
+    color: var(--border); font-size: 16px;
+    flex-shrink: 0; margin-top: 1px;
+  }
+
+  /* ── RULE BOXES ── */
+  .rule-box {
+    border: 1px solid rgba(255,170,0,0.25);
+    background: rgba(255,170,0,0.04);
+    border-radius: 8px; padding: 18px 22px;
+    margin: 16px 0;
+  }
+
+  .rule-box .rule-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.15em;
+    color: var(--accent-amber); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .rule-box p { font-size: 14px; color: var(--text-mid); }
+
+  /* ── SYNC CHECKPOINTS ── */
+  .checkpoint {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 10px;
+    background: var(--surface);
+    transition: border-color 0.2s;
+  }
+
+  .checkpoint:hover { border-color: rgba(255,170,0,0.4); }
+
+  .cp-hour {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px; font-weight: 700;
+    color: var(--accent-amber);
+    flex-shrink: 0; width: 80px; text-align: center;
+    padding-top: 2px;
+  }
+
+  .cp-body h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .cp-body p { font-size: 13px; color: var(--text-muted); }
+
+  /* ── RISK TABLE ── */
+  .risk-table { width: 100%; border-collapse: collapse; }
+  .risk-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-muted); padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+
+  .risk-table td {
+    font-size: 13px; padding: 12px 16px;
+    border-bottom: 1px solid rgba(30,42,53,0.5);
+    color: var(--text-mid); vertical-align: top;
+  }
+
+  .risk-table tr:last-child td { border-bottom: none; }
+  .risk-table tr:hover td { background: rgba(255,255,255,0.015); }
+
+  .risk-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; padding: 3px 9px; border-radius: 3px;
+  }
+
+  .risk-tag.high { background: rgba(255,68,102,0.12); color: var(--accent-red); }
+  .risk-tag.med { background: rgba(255,170,0,0.12); color: var(--accent-amber); }
+  .risk-tag.low { background: rgba(0,255,136,0.1); color: var(--accent-green); }
+
+  /* ── PITCH ── */
+  .pitch-step {
+    display: flex; gap: 20px; align-items: flex-start;
+    margin-bottom: 24px;
+  }
+
+  .pitch-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 700;
+    color: var(--accent-red);
+    background: rgba(255,68,102,0.1);
+    border: 1px solid rgba(255,68,102,0.2);
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; flex-shrink: 0;
+  }
+
+  .pitch-content h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .pitch-content p { font-size: 13px; color: var(--text-mid); line-height: 1.6; }
+
+  .quote-box {
+    border: 1px solid rgba(255,68,102,0.3);
+    background: rgba(255,68,102,0.06);
+    border-radius: 8px; padding: 20px 24px;
+    margin: 24px 0;
+    font-size: 18px; font-weight: 700;
+    font-style: italic; line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  .quote-box span { color: var(--accent-red); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px; background: var(--border);
+    margin: 32px 0;
+  }
+
+  /* ── COMPONENT TABLE ── */
+  .comp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .comp-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px;
+  }
+
+  .comp-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--accent-blue);
+    margin-bottom: 6px;
+  }
+
+  .comp-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── FOOTER ── */
+  .footer {
+    padding: 48px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .footer strong { color: var(--text-mid); }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: white; color: black; }
+    body::before, body::after, .glow-orb-2 { display: none; }
+    .nav-pills { position: static; background: white; }
+    pre { border: 1px solid #ccc; background: #f5f5f5; color: #333; }
+  }
+</style>
+</head>
+<body>
+<div class="glow-orb-2"></div>
+
+<div class="wrapper">
+
+  <!-- ═══ HERO ═══ -->
+  <div class="hero">
+    <div class="hero-tag">24HR HACKATHON BATTLE PLAN</div>
+    <h1>Healthcare Patient<br><span class="grad">Digital Twin</span></h1>
+    <p class="hero-sub">Complete guide for a 2-person team. Frontend + Backend. Single Next.js repo. Every step, every line, every sync point.</p>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-value" style="color:var(--accent-blue)">24</span>
+        <span class="stat-label">Hours Total</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" style="color:var(--accent-cyan)">2</span>
+        <span class="stat-label">Teammates</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" style="color:var(--accent-green)">5</span>
+        <span class="stat-label">Sync Points</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" style="color:var(--accent-amber)">4</span>
+        <span class="stat-label">Core Features</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ NAV ═══ -->
+  <nav class="nav-pills">
+    <a href="#setup" class="nav-pill shared">⬡ Setup</a>
+    <a href="#structure" class="nav-pill shared">⬡ Repo Structure</a>
+    <a href="#types" class="nav-pill shared">⬡ Types Contract</a>
+    <a href="#frontend" class="nav-pill fe">◈ Frontend</a>
+    <a href="#backend" class="nav-pill be">◈ Backend</a>
+    <a href="#timeline" class="nav-pill">◈ Timeline</a>
+    <a href="#sync" class="nav-pill">◈ Sync Protocol</a>
+    <a href="#risks" class="nav-pill">◈ Risk Mitigation</a>
+    <a href="#pitch" class="nav-pill">◈ Pitch</a>
+  </nav>
+
+
+  <!-- ═══ SECTION 1: FIRST 30 MIN ═══ -->
+  <section class="section" id="setup">
+    <div class="section-header">
+      <div class="section-label">00:00 — Together</div>
+      <div class="section-title">First 30 Minutes Setup</div>
+      <p class="section-desc">Do this before splitting. If you skip any step here, you'll pay for it later.</p>
+    </div>
+
+    <div class="card shared-card">
+      <h3>🚀 Project Initialization</h3>
+      <pre><span class="comment"># One person runs this. Other clones after.</span>
+npx create-next-app@latest healthcare-twin \
+  --typescript --tailwind --eslint --app --src-dir=no
+
+cd healthcare-twin
+npm install zustand recharts framer-motion anthropic
+npm install -D @types/node
+
+<span class="comment"># Create .env.local in root</span>
+echo "ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxx" > .env.local</pre>
+    </div>
+
+    <div class="card shared-card">
+      <h3>🔑 Anthropic API Key Setup</h3>
+      <p>One person creates the account at <code>console.anthropic.com</code>. Free trial credits are enough for a full hackathon demo. Share the key over a private DM — never commit it to git. Confirm <code>.env.local</code> is in your <code>.gitignore</code> (Next.js adds it by default).</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card shared-card">
+        <h3>Git Workflow Setup</h3>
+        <pre style="font-size:11px;"><span class="comment"># Person A creates repo + invites Person B</span>
+git checkout -b dev/frontend   <span class="comment"># YOU</span>
+git checkout -b dev/backend    <span class="comment"># TEAMMATE</span>
+
+<span class="comment"># Merge only at sync checkpoints</span>
+<span class="comment"># main = always deployable</span></pre>
+      </div>
+      <div class="card warn-card">
+        <h3>⚠️ Territory Rules</h3>
+        <ul class="checklist">
+          <li>You never touch <code>/app/api/</code></li>
+          <li>Teammate never touches <code>/components/</code> or pages</li>
+          <li>Both freely edit <code>/types/patient.ts</code> — message first</li>
+          <li>Mock data lives in <code>/data/mockData.ts</code> — yours</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ═══ SECTION 2: REPO STRUCTURE ═══ -->
+  <section class="section" id="structure">
+    <div class="section-header">
+      <div class="section-label">Architecture</div>
+      <div class="section-title">Single Repo Structure</div>
+      <p class="section-desc">Agreed upon before writing a single line of feature code. This is your shared map.</p>
+    </div>
+
+    <div class="tree">
+healthcare-twin/<br>
+├── app/<br>
+│   ├── <span class="tree-fe">page.tsx</span>                     <span class="tree-comment">→ FE: Landing / Patient Form</span><br>
+│   ├── <span class="tree-fe">dashboard/</span><br>
+│   │   └── <span class="tree-fe">page.tsx</span>                 <span class="tree-comment">→ FE: Main Twin Dashboard</span><br>
+│   ├── <span class="tree-fe">simulator/</span><br>
+│   │   └── <span class="tree-fe">page.tsx</span>                 <span class="tree-comment">→ FE: What-If Simulator</span><br>
+│   ├── <span class="tree-fe">chat/</span><br>
+│   │   └── <span class="tree-fe">page.tsx</span>                 <span class="tree-comment">→ FE: AI Health Chat</span><br>
+│   └── <span class="tree-be">api/</span>                         <span class="tree-comment">→ BE territory</span><br>
+│       ├── <span class="tree-be">analyze/route.ts</span>         <span class="tree-comment">→ POST /api/analyze</span><br>
+│       ├── <span class="tree-be">simulate/route.ts</span>        <span class="tree-comment">→ POST /api/simulate</span><br>
+│       ├── <span class="tree-be">chat/route.ts</span>            <span class="tree-comment">→ POST /api/chat</span><br>
+│       └── <span class="tree-be">history/route.ts</span>         <span class="tree-comment">→ GET  /api/history</span><br>
+│<br>
+├── <span class="tree-fe">components/</span>                      <span class="tree-comment">→ FE territory</span><br>
+│   ├── <span class="tree-fe">PatientForm.tsx</span><br>
+│   ├── <span class="tree-fe">RiskGauge.tsx</span><br>
+│   ├── <span class="tree-fe">RiskChart.tsx</span><br>
+│   ├── <span class="tree-fe">BodyHeatmap.tsx</span><br>
+│   ├── <span class="tree-fe">ScenarioCard.tsx</span><br>
+│   ├── <span class="tree-fe">DeltaComparison.tsx</span><br>
+│   └── <span class="tree-fe">ChatBox.tsx</span><br>
+│<br>
+├── <span class="tree-fe">store/</span><br>
+│   └── <span class="tree-fe">patientStore.ts</span>              <span class="tree-comment">→ FE: Zustand global state</span><br>
+│<br>
+├── <span class="tree-be">lib/</span>                             <span class="tree-comment">→ BE territory</span><br>
+│   ├── <span class="tree-be">riskEngine.ts</span>               <span class="tree-comment">→ Rule-based scoring, no AI</span><br>
+│   └── <span class="tree-be">claudeService.ts</span>            <span class="tree-comment">→ All Claude API calls</span><br>
+│<br>
+├── <span class="tree-shared">types/</span><br>
+│   └── <span class="tree-shared">patient.ts</span>                   <span class="tree-comment">→ SHARED. Both import from here.</span><br>
+│<br>
+├── <span class="tree-fe">data/</span><br>
+│   └── <span class="tree-fe">mockData.ts</span>                  <span class="tree-comment">→ FE: fake responses for early dev</span><br>
+│<br>
+└── <span class="tree-dim">.env.local</span>                       <span class="tree-comment">→ ANTHROPIC_API_KEY (never commit)</span>
+    </div>
+  </section>
+
+
+  <!-- ═══ SECTION 3: TYPES CONTRACT ═══ -->
+  <section class="section" id="types">
+    <div class="section-header">
+      <div class="section-label">Shared Contract</div>
+      <div class="section-title">The Types File — Your Sync Bible</div>
+      <p class="section-desc">Write this together in Hour 1. If either person needs to change a type, message first. This is what keeps you from breaking each other's code.</p>
+    </div>
+
+    <div class="rule-box">
+      <div class="rule-label">🔒 Rule</div>
+      <p>TypeScript enforces the contract automatically. If backend changes a response shape without telling you, the compiler will error on your component immediately. This is your early-warning system — don't silence TypeScript errors, fix them.</p>
+    </div>
+
+    <pre><span class="comment">// /types/patient.ts — SHARED. Both teammates import from here.</span>
+
+<span class="keyword">export interface</span> <span class="type">PatientInput</span> {
+  name: string
+  age: number
+  gender: <span class="string">'male'</span> | <span class="string">'female'</span> | <span class="string">'other'</span>
+  weight: number        <span class="comment">// kg</span>
+  height: number        <span class="comment">// cm</span>
+  systolic_bp: number   <span class="comment">// e.g. 120</span>
+  diastolic_bp: number  <span class="comment">// e.g. 80</span>
+  glucose: number       <span class="comment">// mg/dL fasting</span>
+  cholesterol: number   <span class="comment">// mg/dL total</span>
+  smoking: boolean
+  exercise: <span class="string">'none'</span> | <span class="string">'light'</span> | <span class="string">'moderate'</span> | <span class="string">'heavy'</span>
+  family_history: boolean
+}
+
+<span class="keyword">export interface</span> <span class="type">RiskScores</span> {
+  diabetes: number      <span class="comment">// 0–100</span>
+  cardiac: number       <span class="comment">// 0–100</span>
+  hypertension: number  <span class="comment">// 0–100</span>
+}
+
+<span class="keyword">export interface</span> <span class="type">AnalyzeResponse</span> {
+  patient_id: string
+  risk_scores: <span class="type">RiskScores</span>
+  overall_risk: <span class="string">'LOW'</span> | <span class="string">'MEDIUM'</span> | <span class="string">'HIGH'</span> | <span class="string">'CRITICAL'</span>
+  insights: string[]
+  recommendations: string[]
+}
+
+<span class="keyword">export interface</span> <span class="type">SimulateRequest</span> {
+  patient: <span class="type">PatientInput</span>
+  scenario: <span class="string">'exercise'</span> | <span class="string">'diet'</span> | <span class="string">'quit_smoking'</span> | <span class="string">'medication'</span>
+}
+
+<span class="keyword">export interface</span> <span class="type">SimulateResponse</span> {
+  original_risks: <span class="type">RiskScores</span>
+  projected_risks: <span class="type">RiskScores</span>
+  delta: <span class="type">RiskScores</span>        <span class="comment">// projected - original (negative = improvement)</span>
+  narrative: string
+}
+
+<span class="keyword">export interface</span> <span class="type">ChatMessage</span> {
+  role: <span class="string">'user'</span> | <span class="string">'assistant'</span>
+  content: string
+}
+
+<span class="keyword">export interface</span> <span class="type">ChatRequest</span> {
+  patient: <span class="type">PatientInput</span>
+  analysis: <span class="type">AnalyzeResponse</span>
+  history: <span class="type">ChatMessage</span>[]
+  message: string
+}
+
+<span class="keyword">export interface</span> <span class="type">ChatResponse</span> {
+  reply: string
+}</pre>
+  </section>
+
+
+  <!-- ═══ SECTION 4: FRONTEND ═══ -->
+  <section class="section" id="frontend">
+    <div class="section-header">
+      <div class="section-label">Frontend Dev</div>
+      <div class="section-title">
+        <span class="role-badge fe" style="font-size:13px;margin-right:12px;">◈ YOU</span>
+        Pages, Components & State
+      </div>
+      <p class="section-desc">React + Next.js App Router + Zustand + Recharts + Framer Motion + Tailwind. Your golden rule: mock data first, real API after Hour 12.</p>
+    </div>
+
+    <!-- Tech Stack -->
+    <div class="card fe-card">
+      <h3>Tech Stack</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+        <span style="background:rgba(0,170,255,0.1);color:var(--fe-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">Next.js 14 (App Router)</span>
+        <span style="background:rgba(0,170,255,0.1);color:var(--fe-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">TypeScript</span>
+        <span style="background:rgba(0,170,255,0.1);color:var(--fe-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">Zustand</span>
+        <span style="background:rgba(0,170,255,0.1);color:var(--fe-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">Recharts</span>
+        <span style="background:rgba(0,170,255,0.1);color:var(--fe-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">Framer Motion</span>
+        <span style="background:rgba(0,170,255,0.1);color:var(--fe-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">Tailwind CSS</span>
+      </div>
+    </div>
+
+    <!-- Mock Data -->
+    <div class="card fe-card">
+      <h3>Mock Data — Build This First</h3>
+      <p style="margin-bottom:12px;">Create <code>/data/mockData.ts</code> before touching any components. Every fetch call uses this until Hour 12.</p>
+      <pre><span class="comment">// /data/mockData.ts</span>
+<span class="keyword">import</span> { <span class="type">AnalyzeResponse</span>, <span class="type">SimulateResponse</span>, <span class="type">PatientInput</span> } <span class="keyword">from</span> <span class="string">'@/types/patient'</span>
+
+<span class="keyword">export const</span> DEMO_PATIENT: <span class="type">PatientInput</span> = {
+  name: <span class="string">'Alex Morgan'</span>, age: <span class="num">45</span>, gender: <span class="string">'male'</span>,
+  weight: <span class="num">92</span>, height: <span class="num">175</span>, systolic_bp: <span class="num">138</span>,
+  diastolic_bp: <span class="num">88</span>, glucose: <span class="num">118</span>, cholesterol: <span class="num">242</span>,
+  smoking: <span class="keyword">true</span>, exercise: <span class="string">'none'</span>, family_history: <span class="keyword">true</span>
+}
+
+<span class="keyword">export const</span> MOCK_ANALYSIS: <span class="type">AnalyzeResponse</span> = {
+  patient_id: <span class="string">'demo-001'</span>,
+  risk_scores: { diabetes: <span class="num">72</span>, cardiac: <span class="num">58</span>, hypertension: <span class="num">81</span> },
+  overall_risk: <span class="string">'HIGH'</span>,
+  insights: [
+    <span class="string">'Fasting glucose is significantly elevated — early marker for Type 2 diabetes.'</span>,
+    <span class="string">'Combined cholesterol and low activity are compounding cardiac risk.'</span>,
+    <span class="string">'Blood pressure readings indicate Stage 1 hypertension.'</span>
+  ],
+  recommendations: [
+    <span class="string">'30 minutes of moderate cardio, 5 days a week.'</span>,
+    <span class="string">'Reduce sodium intake below 2,300mg/day.'</span>,
+    <span class="string">'Schedule a full lipid panel within 30 days.'</span>
+  ]
+}
+
+<span class="keyword">export const</span> MOCK_SIMULATION: <span class="type">SimulateResponse</span> = {
+  original_risks: { diabetes: <span class="num">72</span>, cardiac: <span class="num">58</span>, hypertension: <span class="num">81</span> },
+  projected_risks: { diabetes: <span class="num">51</span>, cardiac: <span class="num">39</span>, hypertension: <span class="num">62</span> },
+  delta: { diabetes: <span class="num">-21</span>, cardiac: <span class="num">-19</span>, hypertension: <span class="num">-19</span> },
+  narrative: <span class="string">'Starting moderate exercise 5x/week could reduce diabetes risk by 21 points over 6 months.'</span>
+}</pre>
+    </div>
+
+    <!-- Zustand Store -->
+    <div class="card fe-card">
+      <h3>Zustand Store</h3>
+      <pre><span class="comment">// /store/patientStore.ts</span>
+<span class="keyword">import</span> { create } <span class="keyword">from</span> <span class="string">'zustand'</span>
+<span class="keyword">import</span> { <span class="type">PatientInput</span>, <span class="type">AnalyzeResponse</span>, <span class="type">SimulateResponse</span>, <span class="type">ChatMessage</span> } <span class="keyword">from</span> <span class="string">'@/types/patient'</span>
+
+<span class="keyword">interface</span> <span class="type">PatientStore</span> {
+  patient: <span class="type">PatientInput</span> | null
+  analysis: <span class="type">AnalyzeResponse</span> | null
+  simulation: <span class="type">SimulateResponse</span> | null
+  chatHistory: <span class="type">ChatMessage</span>[]
+  isLoading: boolean
+  setPatient: (p: <span class="type">PatientInput</span>) => void
+  setAnalysis: (a: <span class="type">AnalyzeResponse</span>) => void
+  setSimulation: (s: <span class="type">SimulateResponse</span>) => void
+  addChatMessage: (m: <span class="type">ChatMessage</span>) => void
+  setLoading: (v: boolean) => void
+  reset: () => void
+}
+
+<span class="keyword">export const</span> <span class="fn">usePatientStore</span> = <span class="fn">create</span>&lt;<span class="type">PatientStore</span>&gt;((set) => ({
+  patient: null, analysis: null, simulation: null,
+  chatHistory: [], isLoading: false,
+  setPatient: (patient) => set({ patient }),
+  setAnalysis: (analysis) => set({ analysis }),
+  setSimulation: (simulation) => set({ simulation }),
+  addChatMessage: (m) => set((s) => ({ chatHistory: [...s.chatHistory, m] })),
+  setLoading: (isLoading) => set({ isLoading }),
+  reset: () => set({ patient: null, analysis: null, simulation: null, chatHistory: [] })
+}))</pre>
+    </div>
+
+    <!-- Components -->
+    <h3 style="font-size:16px;font-weight:700;margin:32px 0 16px;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.05em;font-family:'JetBrains Mono',monospace;">Components to Build</h3>
+    <div class="comp-grid">
+      <div class="comp-card">
+        <div class="comp-name">PatientForm.tsx</div>
+        <div class="comp-desc">4-step form: Basic Info → Vitals → Lifestyle → Review & Submit. Include a progress bar, validation per step, and smooth transitions between steps.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">RiskGauge.tsx</div>
+        <div class="comp-desc">SVG semicircle arc that animates from 0 to value on mount. Color: green &lt;40, amber 40–70, red &gt;70. Shows number counting up.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">BodyHeatmap.tsx</div>
+        <div class="comp-desc">SVG human silhouette with colored zones. Heart zone → cardiac risk. Kidney zone → hypertension. Pancreas → diabetes. Tooltip on hover.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">RiskChart.tsx</div>
+        <div class="comp-desc">Recharts BarChart showing all 3 risk scores. Add a reference line at 70 (danger threshold). Animate bars on mount.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">ScenarioCard.tsx</div>
+        <div class="comp-desc">Clickable card for each scenario: Exercise, Diet, Quit Smoking, Medication. Shows icon + label. Highlights on selection.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">DeltaComparison.tsx</div>
+        <div class="comp-desc">Side-by-side bars — original (muted) vs projected (vivid). Shows delta badge: "↓ 21 pts" in green. Use Recharts grouped bar.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">ChatBox.tsx</div>
+        <div class="comp-desc">Scrollable chat UI. User messages right-aligned. AI messages left-aligned with a subtle avatar. Typewriter effect for AI replies.</div>
+      </div>
+    </div>
+
+    <div class="card fe-card" style="margin-top:24px;">
+      <h3>API Integration (After Hour 12)</h3>
+      <p style="margin-bottom:12px;">Swap mock data for real calls. Since both are Next.js in one repo, calls are just internal fetch — no CORS, no base URL issues.</p>
+      <pre><span class="comment">// Replace mock → real in your store actions</span>
+<span class="keyword">const</span> res = <span class="keyword">await</span> <span class="fn">fetch</span>(<span class="string">'/api/analyze'</span>, {
+  method: <span class="string">'POST'</span>,
+  headers: { <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span> },
+  body: <span class="fn">JSON.stringify</span>(patient)
+})
+<span class="keyword">const</span> data: <span class="type">AnalyzeResponse</span> = <span class="keyword">await</span> res.<span class="fn">json</span>()
+<span class="fn">setAnalysis</span>(data)</pre>
+    </div>
+  </section>
+
+
+  <!-- ═══ SECTION 5: BACKEND ═══ -->
+  <section class="section" id="backend">
+    <div class="section-header">
+      <div class="section-label">Backend Dev</div>
+      <div class="section-title">
+        <span class="role-badge be" style="font-size:13px;margin-right:12px;">◈ TEAMMATE</span>
+        API Routes & AI Services
+      </div>
+      <p class="section-desc">Next.js Route Handlers + Anthropic SDK + TypeScript. Rule: every route returns exactly the shape from types/patient.ts. No improvising.</p>
+    </div>
+
+    <div class="card be-card">
+      <h3>Tech Stack</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+        <span style="background:rgba(0,229,204,0.08);color:var(--be-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">Next.js Route Handlers</span>
+        <span style="background:rgba(0,229,204,0.08);color:var(--be-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">TypeScript</span>
+        <span style="background:rgba(0,229,204,0.08);color:var(--be-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">Anthropic SDK</span>
+        <span style="background:rgba(0,229,204,0.08);color:var(--be-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">Zod (validation)</span>
+        <span style="background:rgba(0,229,204,0.08);color:var(--be-color);padding:5px 12px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px;">In-memory Map (sessions)</span>
+      </div>
+    </div>
+
+    <div class="card be-card">
+      <h3>Risk Engine — Pure Logic, No AI</h3>
+      <p style="margin-bottom:12px;">Deterministic scoring means instant responses. Claude is only used for narrative text, not numbers. Judges see fast results.</p>
+      <pre><span class="comment">// /lib/riskEngine.ts</span>
+<span class="keyword">import</span> { <span class="type">PatientInput</span>, <span class="type">RiskScores</span> } <span class="keyword">from</span> <span class="string">'@/types/patient'</span>
+
+<span class="keyword">function</span> <span class="fn">calcBMI</span>(weight: number, height: number) {
+  <span class="keyword">return</span> weight / ((height / <span class="num">100</span>) ** <span class="num">2</span>)
+}
+
+<span class="keyword">export function</span> <span class="fn">calculateRisks</span>(p: <span class="type">PatientInput</span>): <span class="type">RiskScores</span> {
+  <span class="keyword">const</span> bmi = <span class="fn">calcBMI</span>(p.weight, p.height)
+
+  <span class="comment">// — Diabetes</span>
+  <span class="keyword">let</span> diabetes = <span class="num">0</span>
+  <span class="keyword">if</span> (p.glucose >= <span class="num">126</span>) diabetes += <span class="num">40</span>
+  <span class="keyword">else if</span> (p.glucose >= <span class="num">100</span>) diabetes += <span class="num">20</span>
+  <span class="keyword">if</span> (bmi >= <span class="num">30</span>) diabetes += <span class="num">20</span>; <span class="keyword">else if</span> (bmi >= <span class="num">25</span>) diabetes += <span class="num">10</span>
+  <span class="keyword">if</span> (p.family_history) diabetes += <span class="num">20</span>
+  <span class="keyword">if</span> (p.exercise === <span class="string">'none'</span>) diabetes += <span class="num">15</span>
+  <span class="keyword">if</span> (p.smoking) diabetes += <span class="num">5</span>
+
+  <span class="comment">// — Cardiac</span>
+  <span class="keyword">let</span> cardiac = <span class="num">0</span>
+  <span class="keyword">if</span> (p.cholesterol >= <span class="num">240</span>) cardiac += <span class="num">30</span>
+  <span class="keyword">else if</span> (p.cholesterol >= <span class="num">200</span>) cardiac += <span class="num">15</span>
+  <span class="keyword">if</span> (p.systolic_bp >= <span class="num">140</span>) cardiac += <span class="num">25</span>
+  <span class="keyword">if</span> (p.smoking) cardiac += <span class="num">25</span>
+  <span class="keyword">if</span> (p.exercise === <span class="string">'none'</span>) cardiac += <span class="num">15</span>
+  <span class="keyword">if</span> (p.age >= <span class="num">45</span>) cardiac += <span class="num">10</span>
+  <span class="keyword">if</span> (p.family_history) cardiac += <span class="num">15</span>
+
+  <span class="comment">// — Hypertension</span>
+  <span class="keyword">let</span> hypertension = <span class="num">0</span>
+  <span class="keyword">if</span> (p.systolic_bp >= <span class="num">140</span>) hypertension += <span class="num">40</span>
+  <span class="keyword">else if</span> (p.systolic_bp >= <span class="num">130</span>) hypertension += <span class="num">20</span>
+  <span class="keyword">if</span> (p.diastolic_bp >= <span class="num">90</span>) hypertension += <span class="num">20</span>
+  <span class="keyword">if</span> (bmi >= <span class="num">30</span>) hypertension += <span class="num">15</span>
+  <span class="keyword">if</span> (p.smoking) hypertension += <span class="num">10</span>
+  <span class="keyword">if</span> (p.age >= <span class="num">50</span>) hypertension += <span class="num">10</span>
+  <span class="keyword">if</span> (p.exercise === <span class="string">'none'</span>) hypertension += <span class="num">5</span>
+
+  <span class="keyword">return</span> {
+    diabetes: <span class="fn">Math.min</span>(diabetes, <span class="num">95</span>),
+    cardiac: <span class="fn">Math.min</span>(cardiac, <span class="num">95</span>),
+    hypertension: <span class="fn">Math.min</span>(hypertension, <span class="num">95</span>)
+  }
+}
+
+<span class="keyword">export function</span> <span class="fn">getOverallRisk</span>(s: <span class="type">RiskScores</span>) {
+  <span class="keyword">const</span> max = <span class="fn">Math.max</span>(s.diabetes, s.cardiac, s.hypertension)
+  <span class="keyword">if</span> (max >= <span class="num">75</span>) <span class="keyword">return</span> <span class="string">'CRITICAL'</span>
+  <span class="keyword">if</span> (max >= <span class="num">55</span>) <span class="keyword">return</span> <span class="string">'HIGH'</span>
+  <span class="keyword">if</span> (max >= <span class="num">35</span>) <span class="keyword">return</span> <span class="string">'MEDIUM'</span>
+  <span class="keyword">return</span> <span class="string">'LOW'</span>
+}</pre>
+    </div>
+
+    <div class="card be-card">
+      <h3>Claude Service</h3>
+      <pre><span class="comment">// /lib/claudeService.ts</span>
+<span class="keyword">import</span> Anthropic <span class="keyword">from</span> <span class="string">'@anthropic-ai/sdk'</span>
+<span class="keyword">import</span> { <span class="type">PatientInput</span>, <span class="type">RiskScores</span>, <span class="type">ChatMessage</span> } <span class="keyword">from</span> <span class="string">'@/types/patient'</span>
+
+<span class="keyword">const</span> client = <span class="keyword">new</span> <span class="fn">Anthropic</span>({ apiKey: process.env.<span class="type">ANTHROPIC_API_KEY</span> })
+
+<span class="keyword">export async function</span> <span class="fn">getInsights</span>(patient: <span class="type">PatientInput</span>, risks: <span class="type">RiskScores</span>) {
+  <span class="keyword">const</span> msg = <span class="keyword">await</span> client.messages.<span class="fn">create</span>({
+    model: <span class="string">'claude-sonnet-4-20250514'</span>,
+    max_tokens: <span class="num">600</span>,
+    messages: [{
+      role: <span class="string">'user'</span>,
+      content: <span class="string">`You are a clinical AI. Patient: ${</span>patient.age<span class="string">}yr ${</span>patient.gender<span class="string">}
+Risk scores — Diabetes: ${</span>risks.diabetes<span class="string">}, Cardiac: ${</span>risks.cardiac<span class="string">}, Hypertension: ${</span>risks.hypertension<span class="string">}
+Vitals: BP ${</span>patient.systolic_bp<span class="string">}/${</span>patient.diastolic_bp<span class="string">}, Glucose ${</span>patient.glucose<span class="string">}, Cholesterol ${</span>patient.cholesterol<span class="string">}
+Lifestyle: Smoking=${</span>patient.smoking<span class="string">}, Exercise=${</span>patient.exercise<span class="string">}
+Return ONLY valid JSON (no markdown):
+{"insights": ["...","...","..."], "recommendations": ["...","...","..."]}`</span>
+    }]
+  })
+  <span class="keyword">return</span> <span class="fn">JSON.parse</span>((msg.content[<span class="num">0</span>] <span class="keyword">as any</span>).text)
+}
+
+<span class="keyword">export async function</span> <span class="fn">chatWithTwin</span>(
+  patient: <span class="type">PatientInput</span>, context: string,
+  history: <span class="type">ChatMessage</span>[], message: string
+) {
+  <span class="keyword">const</span> msg = <span class="keyword">await</span> client.messages.<span class="fn">create</span>({
+    model: <span class="string">'claude-sonnet-4-20250514'</span>,
+    max_tokens: <span class="num">400</span>,
+    system: <span class="string">`Compassionate AI health assistant for ${</span>patient.name<span class="string">}'s digital twin.
+Context: ${</span>context<span class="string">}. Be concise. Never diagnose. Never alarm.`</span>,
+    messages: [...history, { role: <span class="string">'user'</span>, content: message }] <span class="keyword">as any</span>
+  })
+  <span class="keyword">return</span> (msg.content[<span class="num">0</span>] <span class="keyword">as any</span>).text
+}</pre>
+    </div>
+
+    <div class="card be-card">
+      <h3>Analyze Route</h3>
+      <pre><span class="comment">// /app/api/analyze/route.ts</span>
+<span class="keyword">import</span> { NextRequest, NextResponse } <span class="keyword">from</span> <span class="string">'next/server'</span>
+<span class="keyword">import</span> { <span class="type">PatientInput</span>, <span class="type">AnalyzeResponse</span> } <span class="keyword">from</span> <span class="string">'@/types/patient'</span>
+<span class="keyword">import</span> { calculateRisks, getOverallRisk } <span class="keyword">from</span> <span class="string">'@/lib/riskEngine'</span>
+<span class="keyword">import</span> { getInsights } <span class="keyword">from</span> <span class="string">'@/lib/claudeService'</span>
+
+<span class="keyword">export async function</span> <span class="fn">POST</span>(req: NextRequest) {
+  <span class="keyword">try</span> {
+    <span class="keyword">const</span> patient: <span class="type">PatientInput</span> = <span class="keyword">await</span> req.<span class="fn">json</span>()
+    <span class="keyword">const</span> risk_scores = <span class="fn">calculateRisks</span>(patient)
+    <span class="keyword">const</span> overall_risk = <span class="fn">getOverallRisk</span>(risk_scores)
+    <span class="keyword">const</span> { insights, recommendations } = <span class="keyword">await</span> <span class="fn">getInsights</span>(patient, risk_scores)
+
+    <span class="keyword">const</span> response: <span class="type">AnalyzeResponse</span> = {
+      patient_id: <span class="string">`${</span>patient.name<span class="string">}-${</span>Date.<span class="fn">now</span>()<span class="string">}`</span>,
+      risk_scores, overall_risk, insights, recommendations
+    }
+    <span class="keyword">return</span> NextResponse.<span class="fn">json</span>(response)
+  } <span class="keyword">catch</span> (err) {
+    <span class="keyword">return</span> NextResponse.<span class="fn">json</span>({ error: <span class="string">'Analysis failed'</span> }, { status: <span class="num">500</span> })
+  }
+}</pre>
+    </div>
+  </section>
+
+
+  <!-- ═══ SECTION 6: TIMELINE ═══ -->
+  <section class="section" id="timeline">
+    <div class="section-header">
+      <div class="section-label">Execution</div>
+      <div class="section-title">24-Hour Timeline</div>
+      <p class="section-desc">
+        <span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px;"><span style="width:10px;height:10px;background:rgba(0,255,136,0.4);border-radius:2px;display:inline-block;"></span> Both Together</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px;"><span style="width:10px;height:10px;background:rgba(0,170,255,0.4);border-radius:2px;display:inline-block;"></span> Frontend</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px;"><span style="width:10px;height:10px;background:rgba(0,229,204,0.4);border-radius:2px;display:inline-block;"></span> Backend</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;background:rgba(255,170,0,0.6);border-radius:2px;display:inline-block;"></span> Sync Point</span>
+      </p>
+    </div>
+
+    <div class="timeline">
+
+      <div class="timeline-row t-both">
+        <div class="t-hours">00–01</div>
+        <div class="t-content">
+          <div class="t-task">🤝 Setup + Types Contract</div>
+          <div class="t-note">Repo init, folder structure, write /types/patient.ts together, agree on all interfaces</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-sync">
+        <div class="t-hours" style="color:var(--accent-amber)">SYNC 1</div>
+        <div class="t-content">
+          <div class="t-task" style="color:var(--accent-amber)">⟳ Lock types file. Both commit. Message before any future type changes.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-fe">
+        <div class="t-hours">01–02</div>
+        <div class="t-content">
+          <div class="t-task">FE — Routing, layout, Zustand store skeleton</div>
+          <div class="t-note">Create all 4 pages with placeholder content. Set up store with all fields.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-be">
+        <div class="t-hours">01–03</div>
+        <div class="t-content">
+          <div class="t-task">BE — .env.local, test Anthropic SDK raw call</div>
+          <div class="t-note">Confirm API key works. Test a raw completion. Set up /lib folder structure.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-fe">
+        <div class="t-hours">02–05</div>
+        <div class="t-content">
+          <div class="t-task">FE — Build PatientForm.tsx (4 steps)</div>
+          <div class="t-note">Step 1: Basic Info. Step 2: Vitals. Step 3: Lifestyle. Step 4: Review & Submit. Progress bar. Validation per step.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-be">
+        <div class="t-hours">03–06</div>
+        <div class="t-content">
+          <div class="t-task">BE — Build riskEngine.ts</div>
+          <div class="t-note">All 3 conditions fully scored. Test with console.log using DEMO_PATIENT values. Verify math.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-sync">
+        <div class="t-hours" style="color:var(--accent-amber)">SYNC 2</div>
+        <div class="t-content">
+          <div class="t-task" style="color:var(--accent-amber)">⟳ Hour 6 — Teammate shares Postman screenshot. You share PatientForm screenshot. 10 min check-in.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-fe">
+        <div class="t-hours">05–09</div>
+        <div class="t-content">
+          <div class="t-task">FE — Dashboard page + RiskGauge + RiskChart + BodyHeatmap</div>
+          <div class="t-note">All using MOCK_ANALYSIS data. Gauge animates in on mount. Chart shows all 3 risks. Body SVG zones color dynamically.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-be">
+        <div class="t-hours">06–09</div>
+        <div class="t-content">
+          <div class="t-task">BE — Build /api/analyze (hardcoded Claude text first)</div>
+          <div class="t-note">Route works end-to-end but uses placeholder insight strings. Shape matches AnalyzeResponse exactly.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-be">
+        <div class="t-hours">09–11</div>
+        <div class="t-content">
+          <div class="t-task">BE — Wire real claudeService into /api/analyze</div>
+          <div class="t-note">Real AI insights flowing. Test latency. Add error fallback if Claude times out.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-fe">
+        <div class="t-hours">09–12</div>
+        <div class="t-content">
+          <div class="t-task">FE — Simulator page + ScenarioCard + DeltaComparison</div>
+          <div class="t-note">4 scenario cards. On click: show DeltaComparison with MOCK_SIMULATION data. Delta badges green.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-sync">
+        <div class="t-hours" style="color:var(--accent-amber)">SYNC 3</div>
+        <div class="t-content">
+          <div class="t-task" style="color:var(--accent-amber)">⟳ Hour 12 — INTEGRATION. You swap mock → /api/analyze. First real end-to-end call. Fix any shape issues.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-be">
+        <div class="t-hours">11–14</div>
+        <div class="t-content">
+          <div class="t-task">BE — Build /api/simulate + /api/chat</div>
+          <div class="t-note">Simulate re-runs riskEngine with modified patient inputs per scenario. Chat calls claudeService with history array.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-fe">
+        <div class="t-hours">12–15</div>
+        <div class="t-content">
+          <div class="t-task">FE — Wire /api/simulate and /api/chat</div>
+          <div class="t-note">Replace MOCK_SIMULATION with real call. Wire ChatBox to /api/chat. Typewriter animation for AI response.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-fe">
+        <div class="t-hours">15–17</div>
+        <div class="t-content">
+          <div class="t-task">FE — Build ChatBox.tsx</div>
+          <div class="t-note">Scrollable chat UI. Typewriter effect. Loading state (typing indicator). Empty state with suggested questions.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-be">
+        <div class="t-hours">14–17</div>
+        <div class="t-content">
+          <div class="t-task">BE — Build /api/history + error handling</div>
+          <div class="t-note">In-memory Map for session storage. Validate all inputs. Handle malformed data gracefully.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-sync">
+        <div class="t-hours" style="color:var(--accent-amber)">SYNC 4</div>
+        <div class="t-content">
+          <div class="t-task" style="color:var(--accent-amber)">⟳ Hour 18 — Full flow together: form → dashboard → simulator → chat. 30 min joint session. Fix all blockers.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-fe">
+        <div class="t-hours">17–20</div>
+        <div class="t-content">
+          <div class="t-task">FE — Framer Motion, loading states, polish pass</div>
+          <div class="t-note">Page transitions. Gauge fills animate. Loading spinners for API calls. Error states. Responsive fixes.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-be">
+        <div class="t-hours">17–20</div>
+        <div class="t-content">
+          <div class="t-task">BE — Test all routes with Thunder Client/curl</div>
+          <div class="t-note">Edge cases: extreme values, missing fields, API timeout simulation. Cache a few responses as fallback.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-both">
+        <div class="t-hours">20–22</div>
+        <div class="t-content">
+          <div class="t-task">🤝 End-to-end run with real backend</div>
+          <div class="t-note">Run through the full demo flow twice. Fix anything that breaks. Freeze features at Hour 22.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-both">
+        <div class="t-hours">22–23</div>
+        <div class="t-content">
+          <div class="t-task">🎯 Pre-load Alex Morgan demo data + final polish</div>
+          <div class="t-note">Fill form once, save as default. Never type live data during pitch. Rehearse demo flow.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-sync">
+        <div class="t-hours" style="color:var(--accent-amber)">SYNC 5</div>
+        <div class="t-content">
+          <div class="t-task" style="color:var(--accent-amber)">⟳ Hour 23 — Demo dry run together. Full 3-minute presentation rehearsal. No more code after this.</div>
+        </div>
+      </div>
+
+      <div class="timeline-row t-both">
+        <div class="t-hours">23–24</div>
+        <div class="t-content">
+          <div class="t-task">🏁 Pitch prep + standby for hotfixes</div>
+          <div class="t-note">Presentation slides. Talking points. Backend stays ready to restart server if needed.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ═══ SECTION 7: SYNC PROTOCOL ═══ -->
+  <section class="section" id="sync">
+    <div class="section-header">
+      <div class="section-label">Staying Aligned</div>
+      <div class="section-title">Sync Protocol</div>
+      <p class="section-desc">Two people, one codebase — this is how you don't break each other.</p>
+    </div>
+
+    <h3 style="font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;margin-bottom:20px;">5 Fixed Checkpoints</h3>
+
+    <div class="checkpoint">
+      <div class="cp-hour">H:01</div>
+      <div class="cp-body">
+        <h4>Types File Locked</h4>
+        <p>Both commit <code>types/patient.ts</code>. From this point, any type change requires a message to the other person first. TypeScript will flag mismatches automatically.</p>
+      </div>
+    </div>
+
+    <div class="checkpoint">
+      <div class="cp-hour">H:06</div>
+      <div class="cp-body">
+        <h4>Visual Progress Check</h4>
+        <p>Teammate shares a Postman screenshot of <code>/api/analyze</code> returning the correct shape. You share a PatientForm screenshot with mock data flowing through. 10 minutes max.</p>
+      </div>
+    </div>
+
+    <div class="checkpoint">
+      <div class="cp-hour">H:12</div>
+      <div class="cp-body">
+        <h4>Integration Hour — First Real API Call</h4>
+        <p>You swap <code>MOCK_ANALYSIS</code> for real <code>fetch('/api/analyze')</code>. Run it together. Fix any response shape mismatches TypeScript or the console surfaces. This is the most critical sync point.</p>
+      </div>
+    </div>
+
+    <div class="checkpoint">
+      <div class="cp-hour">H:18</div>
+      <div class="cp-body">
+        <h4>Full E2E Session — 30 Minutes Together</h4>
+        <p>Run the complete flow: form → dashboard → simulator → chat. Both people watching. Fix every blocker before going independent again. After this, freeze features — only polish.</p>
+      </div>
+    </div>
+
+    <div class="checkpoint">
+      <div class="cp-hour">H:23</div>
+      <div class="cp-body">
+        <h4>Demo Dry Run</h4>
+        <p>Full 3-minute presentation rehearsal. One person pitches, other watches as a judge. Swap and repeat. No code changes after this point.</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="grid-2">
+      <div class="rule-box">
+        <div class="rule-label">⚡ The 20-Minute Rule</div>
+        <p>If either person is blocked for more than 20 minutes — message immediately. Don't silently struggle. The other person might have the answer in 2 minutes.</p>
+      </div>
+      <div class="rule-box">
+        <div class="rule-label">🔒 The Shape Change Rule</div>
+        <p>Need to change an API response shape? Message → update <code>types/patient.ts</code> → push → TypeScript tells the other person exactly what to fix. In that order. Always.</p>
+      </div>
+    </div>
+
+    <div class="card warn-card" style="margin-top:16px;">
+      <h3>Git Workflow</h3>
+      <pre><span class="comment"># Branches</span>
+main           <span class="comment"># always deployable</span>
+dev/frontend   <span class="comment"># your branch</span>
+dev/backend    <span class="comment"># teammate's branch</span>
+
+<span class="comment"># Merge into main only at sync checkpoints</span>
+<span class="comment"># Never force-push main</span>
+<span class="comment"># Commit messages: "fe: add RiskGauge" / "be: wire claudeService"</span></pre>
+    </div>
+  </section>
+
+
+  <!-- ═══ SECTION 8: RISK MITIGATION ═══ -->
+  <section class="section" id="risks">
+    <div class="section-header">
+      <div class="section-label">Contingency</div>
+      <div class="section-title">Risk Mitigation</div>
+      <p class="section-desc">Every hackathon has surprises. Here's how to handle the most common ones without losing hours.</p>
+    </div>
+
+    <table class="risk-table" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <thead>
+        <tr>
+          <th>Risk</th>
+          <th>Severity</th>
+          <th>Mitigation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Claude API slow or rate-limited</strong></td>
+          <td><span class="risk-tag high">HIGH</span></td>
+          <td>Cache last 3 responses in memory. Have 5 pre-generated insights as fallback strings. Risk scores still work instantly — only text is affected.</td>
+        </tr>
+        <tr>
+          <td><strong>Backend not ready at Hour 12</strong></td>
+          <td><span class="risk-tag med">MED</span></td>
+          <td>Frontend works fully on mock data indefinitely. Delay integration to Hour 15. Demo can still run on mocks if needed.</td>
+        </tr>
+        <tr>
+          <td><strong>Type shape mismatch on integration</strong></td>
+          <td><span class="risk-tag med">MED</span></td>
+          <td>TypeScript surfaces this immediately. Fix in the types file, let compiler guide both sides. Budget 30 min for this.</td>
+        </tr>
+        <tr>
+          <td><strong>Feature creep past Hour 15</strong></td>
+          <td><span class="risk-tag high">HIGH</span></td>
+          <td>Hard freeze at Hour 22. Write the freeze time on a sticky note. New ideas go in a "v2" list — don't touch the code.</td>
+        </tr>
+        <tr>
+          <td><strong>Typing live data during pitch</strong></td>
+          <td><span class="risk-tag high">HIGH</span></td>
+          <td>Pre-load Alex Morgan data and save as a URL param or localStorage. Never enter form data live on stage.</td>
+        </tr>
+        <tr>
+          <td><strong>npm server crashes during demo</strong></td>
+          <td><span class="risk-tag med">MED</span></td>
+          <td>Keep a terminal window open at all times. Deploy to Vercel at Hour 20 as a live backup URL.</td>
+        </tr>
+        <tr>
+          <td><strong>API key exposed in code</strong></td>
+          <td><span class="risk-tag high">HIGH</span></td>
+          <td>Always use <code>process.env.ANTHROPIC_API_KEY</code>. Confirm <code>.env.local</code> is in .gitignore before first push. Check with <code>git status</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+
+  <!-- ═══ SECTION 9: PITCH ═══ -->
+  <section class="section" id="pitch">
+    <div class="section-header">
+      <div class="section-label">Presentation</div>
+      <div class="section-title">Pitch Strategy</div>
+      <p class="section-desc">The demo is your strongest weapon. Structure the 3 minutes to maximize the emotional and technical impact on judges.</p>
+    </div>
+
+    <div class="pitch-step">
+      <div class="pitch-num">0:20</div>
+      <div class="pitch-content">
+        <h4>The Hook</h4>
+        <p>Open with the problem emotionally. <em>"Every year, millions are diagnosed too late. Not because medicine failed — but because we had no way to see what was coming."</em> No slides. No code. Just the line.</p>
+      </div>
+    </div>
+
+    <div class="pitch-step">
+      <div class="pitch-num">0:40</div>
+      <div class="pitch-content">
+        <h4>The Problem</h4>
+        <p>Show a static medical record on screen. <em>"This is how doctors see patients today — a snapshot in time. No prediction. No simulation. No future."</em> Keep it visual and fast.</p>
+      </div>
+    </div>
+
+    <div class="pitch-step">
+      <div class="pitch-num">1:00</div>
+      <div class="pitch-content">
+        <h4>The Live Demo ← Most Important</h4>
+        <p>Open your app. Say <em>"Meet Alex, 45. Smoker. No exercise. Family history."</em> Hit submit on the pre-filled form. Let the gauges animate in. Watch the room react. Then click Exercise scenario — let them see the risks drop live.</p>
+      </div>
+    </div>
+
+    <div class="pitch-step">
+      <div class="pitch-num">0:30</div>
+      <div class="pitch-content">
+        <h4>The AI Moment</h4>
+        <p>Switch to the chat tab. Ask live: <em>"What should Alex do this week?"</em> Let Claude respond in real time. Typewriter effect running on screen. Judges see genuine AI, not a script.</p>
+      </div>
+    </div>
+
+    <div class="pitch-step">
+      <div class="pitch-num">0:30</div>
+      <div class="pitch-content">
+        <h4>The Tech + Impact Close</h4>
+        <p><em>"Next.js + Claude AI + a deterministic risk engine. No hardware. Fully software. Deployable today."</em> Then the closer: the one-liner below.</p>
+      </div>
+    </div>
+
+    <div class="quote-box">
+      <span>"</span>We didn't build a risk calculator.<br>We built a <span>time machine</span> for your health.<span>"</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3 style="font-size:16px;font-weight:700;margin-bottom:20px;">What Judges Are Actually Scoring</h3>
+
+    <table class="risk-table" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+      <thead>
+        <tr>
+          <th>Criteria</th>
+          <th>How You Hit It</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Innovation</strong></td>
+          <td>"Digital twin" framing — not just another risk calculator. Simulation + AI + visual body model is genuinely novel.</td>
+        </tr>
+        <tr>
+          <td><strong>Technical Depth</strong></td>
+          <td>Show the Next.js route handler code briefly. Mention the deterministic risk engine + Claude AI layer. Two-layer architecture reads as thoughtful.</td>
+        </tr>
+        <tr>
+          <td><strong>Feasibility</strong></td>
+          <td>It's live and working on screen. Judges can see it respond to real input. Nothing theoretical.</td>
+        </tr>
+        <tr>
+          <td><strong>Impact</strong></td>
+          <td>Healthcare = emotional resonance + massive real-world scale. Say: "1 in 3 adults has prediabetes and doesn't know it."</td>
+        </tr>
+        <tr>
+          <td><strong>Presentation Quality</strong></td>
+          <td>Clean UI, animated gauges, dramatic demo patient with borderline-critical scores. First impressions are formed in 8 seconds.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+
+  <!-- ═══ FOOTER ═══ -->
+  <div class="footer">
+    <p style="font-size:18px;font-weight:800;margin-bottom:8px;">Mock early. Integrate late. Polish always.</p>
+    <p>Healthcare Patient Digital Twin — 24hr Hackathon Guide</p>
+    <p style="margin-top:12px;color:#2a3a4a;">Built with Claude · Track 01: AI & Intelligent Digital Twins</p>
+  </div>
+
+</div>
+</body>
+</html>
