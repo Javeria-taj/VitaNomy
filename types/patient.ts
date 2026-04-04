@@ -1,82 +1,61 @@
 
 // ─── MODE ───────────────────────────────────────────────
-export type PlatformMode = 'patient' | 'athlete'
+export type PlatformMode = 'patient' | 'athlete' | 'dashboard' | 'simulator'
 
 // ─── PATIENT MODE INPUT ──────────────────────────────────
 export interface PatientInput {
-  mode: 'patient'
-  // identity
+  mode?: 'patient' | 'dashboard'
   name: string
   age: number
-  gender: 'male' | 'female' | 'other'
-  // biometrics (from form OR extracted from PDF)
-  weight: number           // kg
-  height: number           // cm
-  // vitals
-  systolic_bp: number      // mmHg
-  diastolic_bp: number     // mmHg
-  glucose: number          // mg/dL fasting
-  cholesterol_total: number // mg/dL
-  cholesterol_hdl?: number  // mg/dL optional — if available in PDF
-  cholesterol_ldl?: number  // mg/dL optional
-  triglycerides?: number    // mg/dL optional
-  // lifestyle (form only — not in bloodwork)
-  smoking: boolean
-  alcohol: 'none' | 'light' | 'moderate' | 'heavy'
-  exercise: 'none' | 'light' | 'moderate' | 'heavy'
-  // history (form only)
-  family_history: boolean
-  existing_conditions: string[]  // e.g. ['type2_diabetes', 'hypertension']
-  current_medications: string[]  // e.g. ['metformin', 'lisinopril']
-}
-
-// ─── ATHLETE MODE INPUT ──────────────────────────────────
-export interface Compound {
-  name: string             // brand name e.g. "TestoMax" or generic "Testosterone Enanthate"
-  compound_type: string    // e.g. "anabolic_steroid" | "peptide" | "sarm" | "supplement"
-  dose_mg: number          // per administration
-  frequency: string        // e.g. "twice_weekly" | "daily" | "eod"
-  route: 'oral' | 'injectable' | 'topical' | 'other'
-  cycle_week_current: number   // which week of cycle they're in
-  cycle_week_total: number     // total planned cycle length
-  is_pct: boolean          // is this a PCT compound
-}
-
-export interface AthleteInput {
-  mode: 'athlete'
-  // identity
-  name: string
-  age: number
-  gender: 'male' | 'female' | 'other'
-  // biometrics
-  weight: number           // kg
-  height: number           // cm
-  body_fat_percent?: number // if available
-  // bloodwork (extracted from PDF — extended panel for athletes)
+  gender: 'male' | 'female' | 'other' | string
+  weight: number
+  height: number
   systolic_bp?: number
   diastolic_bp?: number
   glucose?: number
+  cholesterol?: number        // legacy shorthand
   cholesterol_total?: number
   cholesterol_hdl?: number
   cholesterol_ldl?: number
   triglycerides?: number
-  hematocrit?: number      // % — key for steroid users
-  hemoglobin?: number      // g/dL
-  rbc?: number             // red blood cell count
-  alt?: number             // liver enzyme — hepatotoxicity marker
-  ast?: number             // liver enzyme
-  testosterone_total?: number   // ng/dL
-  testosterone_free?: number    // pg/mL
-  estradiol?: number       // pg/mL — key for aromatization
-  lh?: number              // LH — suppression marker
-  fsh?: number             // FSH — suppression marker
-  creatinine?: number      // kidney function
-  // compound log (form only)
-  compounds: Compound[]
-  // context
-  training_years: number
-  competition_prep: boolean
-  pct_active: boolean
+  smoking?: boolean
+  alcohol?: 'none' | 'light' | 'moderate' | 'heavy' | string
+  exercise?: 'none' | 'light' | 'moderate' | 'heavy' | string
+  family_history?: boolean
+  existing_conditions?: string[]
+  current_medications?: string[]
+}
+
+// ─── ATHLETE MODE INPUT ──────────────────────────────────
+export interface Compound {
+  name: string
+  compound_type: string
+  dose_mg: number
+  frequency: string
+  route: 'oral' | 'injectable' | 'topical' | 'other'
+  cycle_week_current: number
+  cycle_week_total: number
+  is_pct: boolean
+}
+
+export interface AthleteInput extends Omit<PatientInput, 'mode'> {
+  mode: 'athlete'
+  body_fat_percent?: number
+  hematocrit?: number
+  hemoglobin?: number
+  rbc?: number
+  alt?: number
+  ast?: number
+  testosterone_total?: number
+  testosterone_free?: number
+  estradiol?: number
+  lh?: number
+  fsh?: number
+  creatinine?: number
+  compounds?: Compound[]
+  training_years?: number
+  competition_prep?: boolean
+  pct_active?: boolean
 }
 
 // ─── UNION TYPE — what the engine receives ───────────────
@@ -84,48 +63,50 @@ export type AnyPatientInput = PatientInput | AthleteInput
 
 // ─── SHARED RISK OUTPUT ──────────────────────────────────
 export interface RiskFactor {
-  score: number            // 0–100
-  confidence: 'low' | 'medium' | 'high'
-  confidence_interval: [number, number]  // e.g. [62, 78]
-  primary_drivers: string[] // top 2-3 factors driving this score
+  score: number
+  confidence?: 'low' | 'medium' | 'high'
+  confidence_interval?: [number, number]
+  primary_drivers?: string[]
 }
 
 export interface PatientRiskScores {
-  mode: 'patient'
-  diabetes: RiskFactor
-  cardiac: RiskFactor
-  hypertension: RiskFactor
-  overall_risk: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  mode?: 'patient'
+  diabetes?: RiskFactor | number
+  cardiac?: RiskFactor | number
+  hypertension?: RiskFactor | number
+  overall_risk?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string
 }
 
 export interface AthleteRiskScores {
-  mode: 'athlete'
-  cardiovascular: RiskFactor    // cardiac + BP combined for athletes
-  hepatotoxicity: RiskFactor    // liver stress
-  endocrine_suppression: RiskFactor  // HPTA suppression
-  hematological: RiskFactor    // hematocrit/clot risk
-  overall_risk: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  mode?: 'athlete'
+  cardiovascular?: RiskFactor | number
+  hepatotoxicity?: RiskFactor | number
+  endocrine_suppression?: RiskFactor | number
+  hematological?: RiskFactor | number
+  overall_risk?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string
 }
 
-export type AnyRiskScores = PatientRiskScores | AthleteRiskScores
+// Flexible intersection that works for both patient and athlete
+export type AnyRiskScores = (PatientRiskScores | AthleteRiskScores) & Record<string, any>
 
 // ─── ANALYZE RESPONSE ────────────────────────────────────
 export interface AnalyzeResponse {
   patient_id: string
   mode: PlatformMode
   risk_scores: AnyRiskScores
-  insights: string[]           // 3–5 Claude-generated findings
-  recommendations: string[]    // 3–5 actionable items
-  causation_flags?: string[]   // athlete only — compound-specific signals
-  data_completeness: number    // 0–100, how much of the schema was populated
+  overall_risk?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string  // convenience alias
+  insights: string[]
+  recommendations: string[]
+  causation_flags?: string[]
+  data_completeness?: number
 }
 
 // ─── EXTRACT RESPONSE (PDF → structured) ─────────────────
 export interface ExtractResponse {
   mode: PlatformMode
   extracted_fields: Partial<PatientInput> | Partial<AthleteInput>
-  unreadable_fields: string[]  // fields Claude couldn't find in the PDF
-  confidence: 'low' | 'medium' | 'high'  // overall extraction quality
+  unreadable_fields: string[]
+  confidence: 'low' | 'medium' | 'high'
 }
 
 // ─── SIMULATE ────────────────────────────────────────────
@@ -140,9 +121,9 @@ export interface SimulateRequest {
 export interface SimulateResponse {
   original_risks: AnyRiskScores
   projected_risks: AnyRiskScores
-  delta: Record<string, number>   // key = risk name, value = point change
+  delta: Record<string, number>
   narrative: string
-  timeframe: string               // e.g. "projected over 8 weeks"
+  timeframe?: string
 }
 
 // ─── CHAT ─────────────────────────────────────────────────

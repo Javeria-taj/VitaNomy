@@ -6,6 +6,9 @@ import { SimulatorBody } from '@/components/Simulator/SimulatorBody'
 import { RiskGauge } from '@/components/Simulator/RiskGauge'
 import Link from 'next/link'
 import { usePatientStore } from '@/store/patientStore'
+import { Topbar } from '@/components/Layout/Topbar'
+
+const getScore = (val: any): number => typeof val === 'number' ? val : (val?.score ?? 0)
 
 // ─── STYLE CONSTANTS ──────────────────────────────────────────────────────────
 const SECTION_LABEL = "text-[10px] font-black uppercase tracking-[0.18em] text-black/40 mb-3 block"
@@ -147,13 +150,17 @@ export default function SimulatorPage() {
   // --- BASELINE (From Store or Default) ---
   const baseline = (analysis && patient) ? {
     vitals: { 
-      bp: `${patient.systolic_bp}/${patient.diastolic_bp}`, 
-      glucose: patient.glucose, 
+      bp: `${patient.systolic_bp ?? 120}/${patient.diastolic_bp ?? 80}`, 
+      glucose: patient.glucose ?? 100, 
       hr: 75, 
       bmi: parseFloat((patient.weight / ((patient.height / 100) ** 2)).toFixed(1))
     },
-    risks: analysis.risk_scores,
-    score: 82 // Mock overall health score
+    risks: {
+      diabetes: getScore(analysis.risk_scores.diabetes),
+      cardiac: getScore(analysis.risk_scores.cardiac),
+      hypertension: getScore(analysis.risk_scores.hypertension)
+    },
+    score: 82
   } : {
     vitals: { bp: '138/88', glucose: 118, hr: 78, bmi: 30.1 },
     risks: { diabetes: 44, cardiac: 55, hypertension: 49 },
@@ -167,10 +174,11 @@ export default function SimulatorPage() {
     setMode('simulator')
     if (patient) {
       setCal(2000)
-      setCarb(patient.exercise === 'none' ? 250 : 180)
-      setSodium(patient.systolic_bp > 130 ? 1500 : 2300)
-      setExercise(patient.exercise === 'none' ? 0 : patient.exercise === 'light' ? 2 : 4)
-      setIsSmoker(patient.smoking)
+      const ex = patient.exercise ?? 'none'
+      setCarb(ex === 'none' ? 250 : 180)
+      setSodium((patient.systolic_bp ?? 120) > 130 ? 1500 : 2300)
+      setExercise(ex === 'none' ? 0 : ex === 'light' ? 2 : 4)
+      setIsSmoker(patient.smoking ?? false)
     }
   }, [patient, setMode])
 
@@ -214,39 +222,7 @@ export default function SimulatorPage() {
       style={{ backgroundColor: '#F4F2E9', fontFamily: 'Inter, system-ui, sans-serif' }}
     >
 
-      {/* ── TOP NAV ─────────────────────────────────────────────────────────── */}
-      <nav className="flex items-center justify-between px-6 py-4 border-b-[3px] border-black" style={{ backgroundColor: '#F4F2E9' }}>
-        <Link href="/" className="text-[20px] font-black text-black tracking-tight">
-          VitaNomy
-        </Link>
-        <div className="hidden md:flex gap-1">
-          {[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Simulator', href: '/simulator' },
-            { label: 'Chat AI', href: '/chat' },
-          ].map(item => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="text-[12px] font-black px-3 py-1.5 border-[2px] border-black transition-all"
-              style={item.label === 'Simulator'
-                ? { backgroundColor: '#113826', color: 'white', boxShadow: '3px 3px 0px #000000' }
-                : { backgroundColor: 'white', color: '#000' }
-              }
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-        <div
-          className="flex items-center gap-2 border-[3px] border-black px-3 py-1.5 text-[12px] font-black"
-          style={{ backgroundColor: 'white', boxShadow: '3px 3px 0px #000000' }}
-        >
-          <div className="w-5 h-5 border-[2px] border-black flex items-center justify-center text-[9px] font-black text-white"
-            style={{ backgroundColor: '#113826' }}>{patient?.name[0] || 'A'}</div>
-          <span className="hidden sm:inline">{patient?.name || 'Guest'}</span>
-        </div>
-      </nav>
+      <Topbar />
 
       {/* ── PAGE HEADER ──────────────────────────────────────────────────────── */}
       <div className="px-6 py-5 border-b-[3px] border-black flex flex-col md:flex-row md:items-center justify-between gap-4" style={{ backgroundColor: '#F4F2E9' }}>

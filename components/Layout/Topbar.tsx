@@ -1,47 +1,71 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { usePatientStore } from '@/store/patientStore'
+import { TypoAvatar } from '@/components/Common/TypoAvatar'
+
+const C = {
+  beige:         '#F8F5EE',
+  white:         '#FFFFFF',
+  darkGreen:     '#1B5E3B',
+  black:         '#0A0F0D',
+  electricYellow:'#C9A84C', // Gold accent
+  mu:            '#5C7268',  // muted text
+}
 
 export function Topbar() {
   const pathname = usePathname()
+  const { patient } = usePatientStore()
   
+  const name = patient?.name || 'Alex Morgan'
+
   const navItems = [
-    { name: 'Form', path: '/onboarding' },
     { name: 'Dashboard', path: '/dashboard' },
     { name: 'Simulator', path: '/simulator' },
-    { name: 'Chat', path: '/chat' },
+    { name: 'Chat AI', path: '/chat' },
+    { name: 'Reports', path: '#' },
   ]
-  
+
   return (
-    <div className="flex items-center justify-between px-5 py-3.5 border-b-[0.5px] border-border-tertiary bg-bg-secondary shrink-0">
-      <div className="text-[15px] font-medium flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-coral"></div>
-        HealthTwin
-      </div>
+    <nav className="flex items-center justify-between px-6 py-3 border-b-[3px] border-black shrink-0 relative z-50"
+      style={{ backgroundColor: C.beige }}>
       
+      {/* ── LOGO ── */}
+      <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+        <div className="w-10 h-10 border-[3px] border-black flex items-center justify-center shadow-[3px_3px_0px_#000]"
+          style={{ backgroundColor: C.darkGreen }}>
+          <span className="font-black text-xl font-mono" style={{ color: C.electricYellow }}>V</span>
+        </div>
+        <span className="text-[22px] font-black tracking-tighter uppercase" style={{ color: C.black }}>
+          Vita<span style={{ color: C.darkGreen }}>Nomy</span>
+        </span>
+      </Link>
+
+      {/* ── NAV ITEMS ── */}
       <div className="flex gap-1">
         {navItems.map((item) => {
           const isActive = pathname === item.path
           return (
             <Link 
-              key={item.name}
+              key={item.name} 
               href={item.path}
-              className={`text-[12px] px-3 py-1.5 rounded-full border-[0.5px] transition-colors ${
-                isActive 
-                  ? 'bg-coral text-white border-coral' 
-                  : 'bg-bg-primary border-border-tertiary text-text-secondary hover:border-coral/50'
-              }`}
-            >
+              className="px-5 py-2 text-[13px] font-black border-[3px] transition-all uppercase tracking-wider"
+              style={isActive
+                ? { backgroundColor: C.darkGreen, color: C.white, borderColor: C.black, boxShadow: '3px 3px 0px #000' }
+                : { backgroundColor: 'transparent', borderColor: 'transparent', color: C.mu }}>
               {item.name}
             </Link>
           )
         })}
       </div>
-      
-      <div className="w-[30px] h-[30px] rounded-full bg-[#f2cc8f] flex items-center justify-center text-[11px] font-medium text-[#7a5c1e]">
-        AM
-      </div>
-    </div>
+
+      {/* ── USER PROFILE ── */}
+      <Link href="/account" className="flex items-center gap-3 px-4 py-2 border-[3px] border-black bg-white shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#000] transition-all cursor-pointer">
+        <TypoAvatar name={name} />
+        <span className="text-[14px] font-black uppercase tracking-tight" style={{ color: C.black }}>{name}</span>
+      </Link>
+    </nav>
   )
 }

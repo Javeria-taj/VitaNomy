@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePatientStore } from '@/store/patientStore'
 import { DEMO_PATIENT, MOCK_ANALYSIS } from '@/data/mockData'
+import { Topbar } from '@/components/Layout/Topbar'
+import { TypoAvatar } from '@/components/Common/TypoAvatar'
 
 // ─── Color tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -265,6 +267,9 @@ function ArcGauge({ label, score, color, bg, status }: {
 }
 
 // ─── Main Dashboard ────────────────────────────────────────────────────────────
+
+const getScore = (val: any): number => typeof val === 'number' ? val : (val?.score || 0);
+
 export default function DashboardPage() {
   const { patient, analysis, setMode, setPatient, setAnalysis } = usePatientStore()
   const [view, setView] = useState<'input' | 'results'>('input')
@@ -282,7 +287,6 @@ export default function DashboardPage() {
   const p = patient || DEMO_PATIENT
   const a = analysis || MOCK_ANALYSIS
   const bmi = (p.weight / ((p.height / 100) ** 2)).toFixed(1)
-  const initials = p.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
   const rs = a.risk_scores
 
   const getStatus = (score: number) => score > 70 ? 'HIGH RISK' : score > 40 ? 'MODERATE' : 'LOW RISK'
@@ -292,52 +296,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: C.beige, fontFamily: 'Inter, system-ui, sans-serif' }}>
 
-      {/* ── LANG STRIP ── */}
-      <div className="flex items-center justify-between px-5 py-1.5" style={{ backgroundColor: C.green2 }}>
-        <span className="text-[10px] text-white/40">VitaNomy — Your Digital Health Twin</span>
-        <div className="flex gap-1">
-          {['EN', 'हि', 'தமி', 'తె'].map((l, i) => (
-            <span key={l} className="text-[10px] px-2 py-0.5"
-              style={i === 0 ? { backgroundColor: C.gold, color: C.ink, fontWeight: 700 } : { color: 'rgba(255,255,255,0.4)' }}>
-              {l}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* ── NAV ── */}
-      <nav className="flex items-center justify-between px-5 py-2.5 border-b-[2.5px] border-black" style={{ backgroundColor: C.beige }}>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 border-[2px] border-black flex items-center justify-center shadow-[2px_2px_0px_#000]"
-            style={{ backgroundColor: C.green }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1C4.2 1 2 3.2 2 6C2 9 5 12 7 13C9 12 12 9 12 6C12 3.2 9.8 1 7 1Z" fill="white" opacity=".9" />
-            </svg>
-          </div>
-          <span className="text-[17px] font-black tracking-tight" style={{ color: C.tx }}>Vita<span style={{ color: C.gold }}>Nomy</span></span>
-        </div>
-        <div className="flex gap-0">
-          {[
-            { label: 'Dashboard', href: '/dashboard', active: true },
-            { label: 'Simulator', href: '/simulator', active: false },
-            { label: 'AI Chat', href: '/chat', active: false },
-            { label: 'Report', href: '#', active: false },
-          ].map(item => (
-            <Link key={item.label} href={item.href}
-              className="text-[12px] font-black px-4 py-1.5 border-b-[2.5px] transition-all"
-              style={item.active
-                ? { color: C.green, borderColor: C.green }
-                : { color: C.mu, borderColor: 'transparent' }}>
-              {item.label}
-            </Link>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 border-[2px] border-black shadow-[2px_2px_0px_#000] bg-white">
-          <div className="w-6 h-6 border-[2px] border-black flex items-center justify-center text-[10px] font-black text-white"
-            style={{ backgroundColor: C.green }}>{initials}</div>
-          <span className="text-[12px] font-bold" style={{ color: C.tx }}>{p.name.split(' ')[0]}</span>
-        </div>
-      </nav>
+      <Topbar />
 
       {/* ── SUB-NAV ── */}
       <div className="flex items-center justify-between px-5 border-b-[2px] border-black" style={{ backgroundColor: C.beige2 }}>
@@ -407,7 +366,7 @@ export default function DashboardPage() {
               {/* Lifestyle */}
               <div>
                 <SectionHeader icon="🏃" title="Lifestyle" />
-                <FieldRow label="Physical Activity" value={p.exercise.charAt(0).toUpperCase() + p.exercise.slice(1) + ' active'} />
+                <FieldRow label="Physical Activity" value={(p.exercise || 'none').charAt(0).toUpperCase() + (p.exercise || 'none').slice(1) + ' active'} />
                 <FieldRow label="Smoking Status" value={p.smoking ? 'Smoker' : 'Non-smoker'} />
                 <FieldRow label="Family History" value={p.family_history ? 'Yes — known conditions' : 'None known'} />
               </div>
@@ -424,11 +383,11 @@ export default function DashboardPage() {
                   backgroundImage: 'repeating-linear-gradient(0deg,#F4F2E9 0,#F4F2E9 1px,transparent 1px,transparent 28px),repeating-linear-gradient(90deg,#F4F2E9 0,#F4F2E9 1px,transparent 1px,transparent 28px)'
                 }} />
                 <BodySVGInput
-                  age={p.age}
-                  systolic={p.systolic_bp}
-                  diastolic={p.diastolic_bp}
-                  cholesterol={p.cholesterol}
-                  glucose={p.glucose}
+                  age={p.age || 0}
+                  systolic={Number(p.systolic_bp) || 0}
+                  diastolic={Number(p.diastolic_bp) || 0}
+                  cholesterol={Number(p.cholesterol || p.cholesterol_total) || 0}
+                  glucose={p.glucose || 0}
                   bmi={bmi}
                 />
               </div>
@@ -525,14 +484,14 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              <BodySVGResults cardiac={rs.cardiac} diabetes={rs.diabetes} hypertension={rs.hypertension} />
+              <BodySVGResults cardiac={getScore(rs.cardiac)} diabetes={getScore(rs.diabetes)} hypertension={getScore(rs.hypertension)} />
 
               {/* Risk legend */}
               <div className="w-full flex flex-col gap-1.5 mt-3">
                 {[
-                  { label: 'Cardiac', score: rs.cardiac },
-                  { label: 'Diabetes', score: rs.diabetes },
-                  { label: 'Hypertension', score: rs.hypertension },
+                  { label: 'Cardiac', score: getScore(rs.cardiac) },
+                  { label: 'Diabetes', score: getScore(rs.diabetes) },
+                  { label: 'Hypertension', score: getScore(rs.hypertension) },
                 ].map(r => (
                   <div key={r.label} className="flex items-center gap-2 px-3 py-2 border-[2px] border-black bg-white shadow-[2px_2px_0px_#000]">
                     <div className="w-3 h-3 flex-shrink-0" style={{ backgroundColor: getColor(r.score) }} />
@@ -568,17 +527,17 @@ export default function DashboardPage() {
                     {p.gender === 'female' ? '♀ Female' : p.gender === 'male' ? '♂ Male' : '⚧ Other'}
                   </span>
                   <span className="text-[10px] font-black px-2 py-1 border-[2px] border-black"
-                    style={{ color: getColor(rs.cardiac), backgroundColor: getBg(rs.cardiac) }}>
-                    {a.overall_risk} RISK
+                    style={{ color: getColor(getScore(rs.cardiac)), backgroundColor: getBg(getScore(rs.cardiac)) }}>
+                    {(a.overall_risk ?? a.risk_scores.overall_risk ?? 'HIGH')} RISK
                   </span>
                 </div>
               </div>
 
               {/* 3 Arc Gauges */}
               <div className="grid grid-cols-3 gap-3">
-                <ArcGauge label="Cardiac" score={rs.cardiac} color={getColor(rs.cardiac)} bg={getBg(rs.cardiac)} status={getStatus(rs.cardiac)} />
-                <ArcGauge label="Diabetes" score={rs.diabetes} color={getColor(rs.diabetes)} bg={getBg(rs.diabetes)} status={getStatus(rs.diabetes)} />
-                <ArcGauge label="Hypertension" score={rs.hypertension} color={getColor(rs.hypertension)} bg={getBg(rs.hypertension)} status={getStatus(rs.hypertension)} />
+                <ArcGauge label="Cardiac" score={getScore(rs.cardiac)} color={getColor(getScore(rs.cardiac))} bg={getBg(getScore(rs.cardiac))} status={getStatus(getScore(rs.cardiac))} />
+                <ArcGauge label="Diabetes" score={getScore(rs.diabetes)} color={getColor(getScore(rs.diabetes))} bg={getBg(getScore(rs.diabetes))} status={getStatus(getScore(rs.diabetes))} />
+                <ArcGauge label="Hypertension" score={getScore(rs.hypertension)} color={getColor(getScore(rs.hypertension))} bg={getBg(getScore(rs.hypertension))} status={getStatus(getScore(rs.hypertension))} />
               </div>
 
               {/* AI Insights */}
