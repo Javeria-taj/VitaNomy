@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  patientId   String   @unique
+  mode        String
+  createdAt   DateTime @default(now())
+  record      PatientRecord?
+  analyses    Analysis[]
+}
+
+model PatientRecord {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique
+  session     Session  @relation(fields: [sessionId], references: [id])
+  mode        String
+  inputData   Json
+  createdAt   DateTime @default(now())
+}
+
+model Analysis {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id])
+  riskScores  Json
+  insights    Json
+  createdAt   DateTime @default(now())
+}

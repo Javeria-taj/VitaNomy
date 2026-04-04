@@ -35,7 +35,7 @@ interface PatientStore {
   loadingAnalyze: boolean
   loadingSimulate: boolean
   loadingChat: boolean
-  setLoading: (key: 'extract'|'analyze'|'simulate'|'chat', v: boolean) => void
+  setLoading: (key: 'extract' | 'analyze' | 'simulate' | 'chat', v: boolean) => void
 
   // error state
   error: string | null
