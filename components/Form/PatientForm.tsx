@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePatientStore } from '@/store/patientStore'
 import { PatientInput } from '@/types/patient'
-import { MOCK_ANALYSIS } from '@/data/mockData'
+import { MOCK_PATIENT_ANALYSIS } from '@/data/mockData'
 import { ProgressBar } from '@/components/Form/ProgressBar'
 
 // ─── Initial form state (matches PatientInput exactly) ────────────────────────
 const INITIAL_STATE: PatientInput = {
+  mode: 'patient',
   name: '',
   age: 0,
   gender: 'male',
@@ -18,10 +19,13 @@ const INITIAL_STATE: PatientInput = {
   systolic_bp: 0,
   diastolic_bp: 0,
   glucose: 0,
-  cholesterol: 0,
+  cholesterol_total: 0,
   smoking: false,
+  alcohol: 'none',
   exercise: 'none',
   family_history: false,
+  existing_conditions: [],
+  current_medications: [],
 }
 
 
@@ -201,7 +205,7 @@ function Step3({ data, update }: { data: PatientInput; update: (d: Partial<Patie
           <TextInput type="number" value={data.glucose} onChange={(v) => update({ glucose: Number(v) })} placeholder="e.g. 118" />
         </Field>
         <Field label="Total Cholesterol" hint="mg/dL — full lipid panel">
-          <TextInput type="number" value={data.cholesterol} onChange={(v) => update({ cholesterol: Number(v) })} placeholder="e.g. 242" />
+          <TextInput type="number" value={data.cholesterol_total || 0} onChange={(v) => update({ cholesterol_total: Number(v) })} placeholder="e.g. 242" />
         </Field>
       </div>
     </div>
@@ -257,7 +261,7 @@ function validate(step: number, data: PatientInput): string | null {
     if (!data.systolic_bp || data.systolic_bp < 60) return 'Please enter a valid systolic BP.'
     if (!data.diastolic_bp || data.diastolic_bp < 40) return 'Please enter a valid diastolic BP.'
     if (!data.glucose || data.glucose < 30) return 'Please enter a valid glucose reading.'
-    if (!data.cholesterol || data.cholesterol < 50) return 'Please enter a valid cholesterol reading.'
+    if (!data.cholesterol_total || data.cholesterol_total < 50) return 'Please enter a valid cholesterol reading.'
   }
   return null
 }
@@ -309,7 +313,7 @@ export function PatientForm() {
     } catch {
       // Fall back to mock data for demo/hackathon
       setPatient(data)
-      setAnalysis(MOCK_ANALYSIS)
+      setAnalysis(MOCK_PATIENT_ANALYSIS)
     } finally {
       setLoading('analyze', false)
       router.push('/dashboard')

@@ -148,11 +148,11 @@ export default function SimulatorPage() {
   const { patient, analysis, setMode } = usePatientStore()
 
   // --- BASELINE (From Store or Default) ---
-  const baseline = (analysis && patient) ? {
-    vitals: { 
-      bp: `${patient.systolic_bp ?? 120}/${patient.diastolic_bp ?? 80}`, 
-      glucose: patient.glucose ?? 100, 
-      hr: 75, 
+  const baseline = (analysis?.risk_scores.mode === 'patient' && patient) ? {
+    vitals: {
+      bp: `${patient.systolic_bp ?? 120}/${patient.diastolic_bp ?? 80}`,
+      glucose: patient.glucose ?? 100,
+      hr: 75,
       bmi: parseFloat((patient.weight / ((patient.height / 100) ** 2)).toFixed(1))
     },
     risks: {
@@ -169,10 +169,10 @@ export default function SimulatorPage() {
 
   const [sim, setSim] = useState(baseline)
 
-  // Sync initial state with patient data
   useEffect(() => {
-    setMode('simulator')
-    if (patient) {
+    setMode('patient') // Use patient mode for simulator view
+    if (patient && patient.mode === 'patient') {
+      const p = patient as PatientInput
       setCal(2000)
       const ex = patient.exercise ?? 'none'
       setCarb(ex === 'none' ? 250 : 180)
@@ -186,12 +186,13 @@ export default function SimulatorPage() {
     setIsSimulating(true)
     setTimeout(() => {
       // Logic using baseline and adjustments
-      const newBpSys = Math.max(110, (patient?.systolic_bp || 138) - (exercise * 2) - (isMeds ? 10 : 0) + (sodium > 3000 ? 8 : 0) + (stress > 7 ? 6 : 0))
-      const newBpDia = Math.max(70, (patient?.diastolic_bp || 88) - (exercise * 1) - (isMeds ? 5 : 0) + (sodium > 3000 ? 4 : 0))
-      const newGlucose = Math.max(85, (patient?.glucose || 118) - (carb < 100 ? 15 : 0) - (exercise * 3) + (cal > 2500 ? 10 : 0))
+      const p = patient as PatientInput
+      const newBpSys = Math.max(110, (p?.systolic_bp || 138) - (exercise * 2) - (isMeds ? 10 : 0) + (sodium > 3000 ? 8 : 0) + (stress > 7 ? 6 : 0))
+      const newBpDia = Math.max(70, (p?.diastolic_bp || 88) - (exercise * 1) - (isMeds ? 5 : 0) + (sodium > 3000 ? 4 : 0))
+      const newGlucose = Math.max(85, (p?.glucose || 118) - (carb < 100 ? 15 : 0) - (exercise * 3) + (cal > 2500 ? 10 : 0))
       const newHr = Math.max(60, 78 - (exercise * 2) - (sleep > 7 ? 4 : 0) + (stress > 7 ? 8 : 0))
       const newBmi = Math.max(22, (baseline.vitals.bmi) - (exercise * 0.5) - (cal < 1500 ? 1.5 : 0) + (cal > 2500 ? 1 : 0))
-      
+
       const newDiabRisk = Math.max(5, (baseline.risks.diabetes) - (newGlucose < 100 ? 15 : 0) - (exercise * 5))
       const newCardRisk = Math.max(8, (baseline.risks.cardiac) - (exercise * 6) - (isSmoker ? -15 : 0) - (isMeds ? 10 : 0))
       const newHyperRisk = Math.max(10, (baseline.risks.hypertension) - (newBpSys < 125 ? 20 : 0) - (sodium < 1500 ? 10 : 0))

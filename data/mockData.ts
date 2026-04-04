@@ -1,4 +1,11 @@
-import type { AnalyzeResponse, SimulateResponse, PatientInput, AthleteInput, ExtractResponse } from '@/types/patient'
+import {
+  PatientInput,
+  AthleteInput,
+  AnalyzeResponse,
+  ExtractResponse,
+  SimulateResponse,
+  PatientRiskScores
+} from '@/types/patient'
 
 // ─── DEMO PATIENT (Patient mode) ─────────────────────────────────────────────
 export const DEMO_PATIENT: PatientInput = {
@@ -12,7 +19,6 @@ export const DEMO_PATIENT: PatientInput = {
   diastolic_bp: 88,
   glucose: 118,
   cholesterol_total: 242,
-  cholesterol: 242,        // legacy shorthand alias used by dashboard
   cholesterol_hdl: 38,
   cholesterol_ldl: 158,
   triglycerides: 210,
@@ -24,7 +30,6 @@ export const DEMO_PATIENT: PatientInput = {
   current_medications: []
 }
 
-// ─── DEMO ATHLETE ─────────────────────────────────────────────────────────────
 export const DEMO_ATHLETE: AthleteInput = {
   mode: 'athlete',
   name: 'Marcus Reed',
@@ -88,42 +93,94 @@ export const DEMO_ATHLETE: AthleteInput = {
   pct_active: false
 }
 
-// ─── MOCK ANALYSIS (Patient) ──────────────────────────────────────────────────
-export const MOCK_ANALYSIS: AnalyzeResponse = {
+export const MOCK_PATIENT_ANALYSIS: AnalyzeResponse = {
   patient_id: 'alex-morgan-mock',
   mode: 'patient',
-  overall_risk: 'HIGH',
   risk_scores: {
     mode: 'patient',
-    diabetes: { score: 72, confidence: 'high', confidence_interval: [69, 79], primary_drivers: ['Fasting glucose elevated at 118 mg/dL', 'Sedentary lifestyle combined with overweight BMI'] },
-    cardiac: { score: 58, confidence: 'high', confidence_interval: [56, 66], primary_drivers: ['Active smoking combined with cholesterol at 242 mg/dL', 'HDL critically low at 38 mg/dL'] },
-    hypertension: { score: 81, confidence: 'high', confidence_interval: [74, 84], primary_drivers: ['BP reading 138/88 — Stage 1 hypertension', 'Smoking and sedentary lifestyle compounding vascular stress'] },
-    overall_risk: 'HIGH'
+    diabetes: {
+      score: 74,
+      confidence: 'high',
+      confidence_interval: [69, 79],
+      primary_drivers: [
+        'Fasting glucose elevated at 118 mg/dL — prediabetic range',
+        'Sedentary lifestyle combined with overweight BMI'
+      ]
+    },
+    cardiac: {
+      score: 61,
+      confidence: 'high',
+      confidence_interval: [56, 66],
+      primary_drivers: [
+        'Active smoking combined with cholesterol at 242 mg/dL',
+        'HDL critically low at 38 mg/dL — protective factor absent'
+      ]
+    },
+    hypertension: {
+      score: 79,
+      confidence: 'high',
+      confidence_interval: [74, 84],
+      primary_drivers: [
+        'BP reading 138/88 — Stage 1 hypertension',
+        'Smoking and sedentary lifestyle compounding vascular stress'
+      ]
+    },
+    overall_risk: 'CRITICAL'
   },
   insights: [
-    'Fasting glucose is significantly elevated — early marker for Type 2 diabetes.',
-    'Combined cholesterol and low activity are compounding cardiac risk.',
-    'Blood pressure readings indicate Stage 1 hypertension.'
+    'Fasting glucose at 118 mg/dL places Alex firmly in prediabetic range.',
+    'HDL at 38 mg/dL is critically low — smoking is the primary driver.',
+    'BP of 138/88 combined with zero exercise is accelerating hypertension.'
   ],
   recommendations: [
-    '30 minutes of moderate cardio, 5 days a week.',
-    'Reduce sodium intake below 2,300mg/day.',
-    'Schedule a full lipid panel within 30 days.'
+    '30 minutes moderate cardio 5x per week reduces all three risk scores.',
+    'Smoking cessation is the single highest-impact intervention available.',
+    'Reduce sodium below 2,300mg/day for BP management.'
   ],
   data_completeness: 92
 }
 
-// ─── MOCK ANALYSIS (Athlete) ──────────────────────────────────────────────────
 export const MOCK_ATHLETE_ANALYSIS: AnalyzeResponse = {
   patient_id: 'marcus-reed-mock',
   mode: 'athlete',
-  overall_risk: 'CRITICAL',
   risk_scores: {
     mode: 'athlete',
-    cardiovascular: { score: 68, confidence: 'high', confidence_interval: [63, 73], primary_drivers: ['HDL severely suppressed at 28 mg/dL', 'Hematocrit at 51% — elevated clot risk'] },
-    hepatotoxicity: { score: 72, confidence: 'high', confidence_interval: [67, 77], primary_drivers: ['ALT at 68 U/L — 1.7x upper normal limit', 'Oral Anadrol at week 8 of 6-week cycle'] },
-    endocrine_suppression: { score: 88, confidence: 'high', confidence_interval: [83, 93], primary_drivers: ['LH at 0.4 and FSH at 0.8 — full HPTA shutdown', 'No PCT active during cycle'] },
-    hematological: { score: 55, confidence: 'high', confidence_interval: [50, 60], primary_drivers: ['Hematocrit 51% with injectable testosterone', 'RBC at 6.1 — mildly elevated'] },
+    cardiovascular: {
+      score: 68,
+      confidence: 'high',
+      confidence_interval: [63, 73],
+      primary_drivers: [
+        'HDL severely suppressed at 28 mg/dL — compound-driven',
+        'Hematocrit at 51% — elevated clot risk'
+      ]
+    },
+    hepatotoxicity: {
+      score: 72,
+      confidence: 'high',
+      confidence_interval: [67, 77],
+      primary_drivers: [
+        'ALT at 68 U/L — 1.7x upper normal limit',
+        'Oral Anadrol at week 8 of 6-week cycle — extended hepatic exposure'
+      ]
+    },
+    endocrine_suppression: {
+      score: 88,
+      confidence: 'high',
+      confidence_interval: [83, 93],
+      primary_drivers: [
+        'LH at 0.4 and FSH at 0.8 — full HPTA shutdown',
+        'No PCT active during cycle'
+      ]
+    },
+    hematological: {
+      score: 55,
+      confidence: 'high',
+      confidence_interval: [50, 60],
+      primary_drivers: [
+        'Hematocrit 51% with injectable testosterone driving erythropoiesis',
+        'RBC at 6.1 — mildly elevated'
+      ]
+    },
     overall_risk: 'CRITICAL'
   },
   insights: [
@@ -137,20 +194,47 @@ export const MOCK_ATHLETE_ANALYSIS: AnalyzeResponse = {
     'Plan PCT to begin 2 weeks post-cycle: Nolvadex 40/40/20/20.'
   ],
   causation_flags: [
-    'ALT elevation (68 U/L) causally linked to oral Anadrol.',
-    'HDL suppression to 28 mg/dL consistent with anabolic steroid use.',
+    'ALT elevation (68 U/L) causally linked to oral Anadrol at current cycle length.',
+    'HDL suppression to 28 mg/dL consistent with anabolic steroid use pattern.',
     'Full LH/FSH suppression expected given exogenous testosterone dose.'
   ],
   data_completeness: 96
 }
 
-// ─── MOCK SIMULATION ─────────────────────────────────────────────────────────
+export const MOCK_EXTRACT_RESPONSE: ExtractResponse = {
+  mode: 'patient',
+  extracted_fields: {
+    glucose: 118,
+    cholesterol_total: 242,
+    cholesterol_hdl: 38,
+    cholesterol_ldl: 158,
+    triglycerides: 210,
+    systolic_bp: 138,
+    diastolic_bp: 88
+  },
+  unreadable_fields: ['weight', 'height'],
+  confidence: 'high'
+}
+
+export const MOCK_ANALYSIS = MOCK_PATIENT_ANALYSIS
+
+const patientScores = MOCK_PATIENT_ANALYSIS.risk_scores as PatientRiskScores
+
 export const MOCK_SIMULATION: SimulateResponse = {
-  original_risks: { diabetes: 72, cardiac: 58, hypertension: 81 },
-  projected_risks: { diabetes: 51, cardiac: 39, hypertension: 62 },
-  delta: { diabetes: -21, cardiac: -19, hypertension: -19 },
-  narrative: 'Starting moderate exercise 5x/week could reduce diabetes risk by 21 points over 6 months.',
-  timeframe: '6 months'
+  original_risks: patientScores,
+  projected_risks: {
+    ...patientScores,
+    diabetes: { ...patientScores.diabetes, score: 53 },
+    cardiac: { ...patientScores.cardiac, score: 42 },
+    hypertension: { ...patientScores.hypertension, score: 60 }
+  } as PatientRiskScores,
+  delta: {
+    diabetes: -21,
+    cardiac: -19,
+    hypertension: -19
+  },
+  narrative: "Increasing cardiovascular activity to 150 minutes per week is projected to significantly lower mean arterial pressure and glucose sensitivity, translating to a ~20% systemic risk reduction across all metabolic biomarkers.",
+  timeframe: "6 months"
 }
 
 // ─── MOCK EXTRACT ─────────────────────────────────────────────────────────────
