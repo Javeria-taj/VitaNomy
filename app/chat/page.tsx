@@ -73,12 +73,11 @@ const renderFormattedText = (text: string, p: any, bmi: string) => {
 const getScore = (val: any): number => typeof val === 'number' ? val : (val?.score ?? 0);
 
 export default function ChatPage() {
-  const { patient, analysis, chatHistory, addChatMessage, setLoading, loadingChat } = usePatientStore()
+  const { patient: p, analysis, chatHistory, addChatMessage, setLoading, loadingChat } = usePatientStore()
   const { t } = useTranslation()
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const p = patient
   const bmi = p ? (p.weight / ((p.height / 100) ** 2)).toFixed(1) : '0'
 
   const combinedChat: ChatMessage[] = chatHistory.length > 0 ? chatHistory : (p ? [
@@ -138,7 +137,7 @@ export default function ChatPage() {
     }
   }
 
-  if (!patient || !analysis) {
+  if (!p || !analysis) {
     return (
       <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: C.beige, color: C.black, fontFamily: "'Inter', sans-serif" }}>
         <Topbar />

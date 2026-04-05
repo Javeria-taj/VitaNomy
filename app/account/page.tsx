@@ -7,6 +7,7 @@ import { usePatientStore } from '@/store/patientStore'
 import { useTranslation } from '@/hooks/useTranslation'
 import { Topbar } from '@/components/Layout/Topbar'
 import { TypoAvatar } from '@/components/Common/TypoAvatar'
+import { AnyPatientInput } from '@/types/patient'
 
 // ─── Clinical Neobrutalist Color Tokens ───────────────────────────────────────
 const C = {
@@ -103,7 +104,7 @@ type TabId = 'profile' | 'metrics' | 'reports' | 'settings' | 'notifications' | 
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function AccountPage() {
-  const { patient, analysis, updatePatient, language, setLanguage } = usePatientStore()
+  const { patient, analysis, setPatient, language, setLanguage } = usePatientStore()
   const { t } = useTranslation()
   const p = patient
   const a = analysis
@@ -201,7 +202,7 @@ export default function AccountPage() {
 
         if (!res.ok) throw new Error('Extraction failed')
         const data = await res.json()
-        updatePatient(data.extracted_fields)
+        setPatient({ ...p, ...data.extracted_fields } as AnyPatientInput)
         setExtractStatus('Success! Twin updated.')
         
         setTimeout(() => {

@@ -9,7 +9,7 @@ interface RiskGaugeProps {
   currentScore: number
   baselineScore: number
   unit: string
-  status: 'LOW RISK' | 'MODERATE' | 'HIGH' | 'CONTROLLED' | 'NORMAL' | 'ELEVATED' | 'STABLE' | 'CRITICAL' | 'STRESSED'
+  status: 'LOW RISK' | 'MODERATE' | 'HIGH' | 'CONTROLLED' | 'NORMAL' | 'ELELVATED' | 'STABLE' | 'CRITICAL' | 'STRESSED'
   color: string
 }
 
@@ -17,7 +17,7 @@ export function RiskGauge({ label, icon, currentScore, baselineScore, status }: 
   const getStatusStyle = (): React.CSSProperties => {
     const green = ['LOW RISK', 'CONTROLLED', 'NORMAL', 'STABLE']
     const yellow = ['MODERATE', 'ELEVATED', 'STRESSED']
-    
+
     if (green.includes(status))
       return { backgroundColor: '#7EC8A0', color: '#000' }
     if (yellow.includes(status))
