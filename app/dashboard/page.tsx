@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { usePatientStore } from '@/store/patientStore'
 import { useTranslation } from '@/hooks/useTranslation'
 import { DEMO_PATIENT, MOCK_ANALYSIS } from '@/data/mockData'
-import { AnyPatientInput, AnalyzeResponse, PatientInput } from '@/types/patient'
-import { Loader2, History as HistoryIcon, FileText, Share2, Download, Zap, Heart, ShieldCheck, BrainCircuit, Target, Clock, AlertTriangle } from 'lucide-react'
+import { AnyPatientInput, AnalyzeResponse, PatientInput, ExtractResponse, AthleteInput } from '@/types/patient'
+import { Loader2, History as HistoryIcon, FileText, Share2, Download, Zap, Heart, ShieldCheck, BrainCircuit, Target, Clock, AlertTriangle, Upload, Sparkles } from 'lucide-react'
 import { Topbar } from '@/components/Layout/Topbar'
 
 // ─── Color tokens ─────────────────────────────────────────────────────────────
@@ -40,14 +40,36 @@ function SectionHeader({ icon, title, badge }: { icon: any; title: string; badge
 }
 
 // ─── Field Row ────────────────────────────────────────────────────────────────
-function FieldRow({ label, value, placeholder }: { label: string; value?: string; placeholder?: string }) {
+function FieldRow({
+  label,
+  value,
+  placeholder,
+  onChange,
+  type = 'text',
+  disabled
+}: {
+  label: string;
+  value?: string | number;
+  placeholder?: string;
+  onChange?: (val: string) => void;
+  type?: 'text' | 'number';
+  disabled?: boolean;
+}) {
   return (
-    <div className="mb-2">
+    <div className={`mb-2 transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
       <div className="text-[9.5px] font-black uppercase tracking-[0.05em] mb-1" style={{ color: C.mu }}>{label}</div>
-      <div className="w-full px-3 py-2 border-[2px] border-black text-[12.5px] font-bold shadow-[2px_2px_0px_#000]"
-        style={{ backgroundColor: value ? C.greenPale : 'white', color: value ? C.tx : C.mu }}>
-        {value || placeholder || '—'}
-      </div>
+      <input
+        type={type}
+        value={value ?? ''}
+        placeholder={placeholder || '—'}
+        disabled={disabled}
+        onChange={(e) => onChange?.(e.target.value)}
+        className="w-full px-3 py-2 border-[2px] border-black text-[12.5px] font-bold shadow-[2px_2px_0px_#000] focus:outline-none focus:shadow-none focus:translate-x-0.5 focus:translate-y-0.5 transition-all outline-none"
+        style={{
+          backgroundColor: value ? C.greenPale : 'white',
+          color: value ? C.tx : C.mu,
+        }}
+      />
     </div>
   )
 }
@@ -133,6 +155,9 @@ export default function DashboardPage() {
   const [history, setHistory] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
 
+  const [extracting, setExtracting] = useState(false)
+  const [extractNotice, setExtractNotice] = useState<{ msg: string, type: 'high' | 'medium' | 'low' } | null>(null)
+
   const p = patient
   const a = analysis
   const s = simulation
@@ -213,35 +238,72 @@ export default function DashboardPage() {
             {/* Sidebar Left: Clinical Profile */}
             <div className="p-5 border-r-[2px] border-black bg-white overflow-y-auto">
               <SectionHeader icon="👤" title={t.dashboard.profile} />
-              <FieldRow label="Legal Name" value={p.name} />
+
+              <div className="mb-6 p-4 border-[2px] border-black bg-[#EDE7D8] shadow-[3px_3px_0px_#000]">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-[10px] font-black uppercase">Bloodwork PDF</span>
+                  <label className="cursor-pointer px-3 py-1 bg-black text-white text-[9px] font-black uppercase hover:bg-emerald-800 transition-colors">
+                    {extracting ? 'EXTRACTING...' : 'UPLOAD & EXTRACT'}
+                    <input type="file" accept=".pdf" className="hidden" onChange={handlePDFUpload} disabled={extracting} />
+                  </label>
+                </div>
+                {extractNotice && (
+                  <div className={`text-[9px] font-bold p-2 border-[1.5px] border-black uppercase text-center ${extractNotice.type === 'high' ? 'bg-emerald-100 text-emerald-800' :
+                      extractNotice.type === 'medium' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                    {extractNotice.msg}
+                  </div>
+                )}
+              </div>
+
+              <FieldRow label="Legal Name" value={p.name} onChange={(v) => setPatient({ ...p, name: v })} disabled={loadingAnalyze} />
               <div className="grid grid-cols-2 gap-2">
-                <FieldRow label="Age" value={`${p.age} yr`} />
-                <FieldRow label="Gender" value={p.gender} />
+                <FieldRow label="Age" value={p.age} type="number" onChange={(v) => setPatient({ ...p, age: parseInt(v) || 0 })} disabled={loadingAnalyze} />
+                <FieldRow label="Gender" value={p.gender} onChange={(v) => setPatient({ ...p, gender: v as any })} disabled={loadingAnalyze} />
               </div>
 
               <div className="mb-6 mt-6">
                 <SectionHeader icon="❤️" title={t.dashboard.cardiac} />
                 <div className="grid grid-cols-2 gap-2">
-                  <FieldRow label="BP Systolic" value={p.systolic_bp ? `${p.systolic_bp} sys` : undefined} />
-                  <FieldRow label="BP Diastolic" value={p.diastolic_bp ? `${p.diastolic_bp} dia` : undefined} />
+                  <FieldRow label="BP Systolic" value={p.systolic_bp} type="number" onChange={(v) => setPatient({ ...p, systolic_bp: parseInt(v) || 0 })} disabled={loadingAnalyze} />
+                  <FieldRow label="BP Diastolic" value={p.diastolic_bp} type="number" onChange={(v) => setPatient({ ...p, diastolic_bp: parseInt(v) || 0 })} disabled={loadingAnalyze} />
                 </div>
-                <FieldRow label="Total Cholesterol" value={p.cholesterol_total ? `${p.cholesterol_total} mg/dL` : undefined} />
+                <FieldRow label="Total Cholesterol" value={p.cholesterol_total} type="number" onChange={(v) => setPatient({ ...p, cholesterol_total: parseInt(v) || 0 })} disabled={loadingAnalyze} />
               </div>
 
               <div className="mb-6">
                 <SectionHeader icon="⏱" title={t.dashboard.metabolic} />
-                <FieldRow label="Glucose" value={`${p.glucose} mg/dL`} />
+                <FieldRow label="Glucose" value={p.glucose} type="number" onChange={(v) => setPatient({ ...p, glucose: parseInt(v) || 0 })} disabled={loadingAnalyze} />
                 <div className="grid grid-cols-2 gap-2">
-                  <FieldRow label="BMI" value={bmi} />
-                  <FieldRow label="HbA1c" placeholder="optional" />
+                  <FieldRow label="Weight (kg)" value={p.weight} type="number" onChange={(v) => setPatient({ ...p, weight: parseInt(v) || 0 })} disabled={loadingAnalyze} />
+                  <FieldRow label="Height (cm)" value={p.height} type="number" onChange={(v) => setPatient({ ...p, height: parseInt(v) || 0 })} disabled={loadingAnalyze} />
                 </div>
               </div>
 
-              <div>
+              <div className="mb-8">
                 <SectionHeader icon="🏃" title={t.dashboard.lifestyle} />
-                <FieldRow label="Physical Activity" value={(p.exercise || 'none').charAt(0).toUpperCase() + (p.exercise || 'none').slice(1)} />
-                <FieldRow label="Smoking" value={p.smoking ? 'Smoker' : 'Non-smoker'} />
+                <FieldRow label="Activity" value={p.exercise} onChange={(v) => setPatient({ ...p, exercise: v as any })} disabled={loadingAnalyze} />
+                <div className="flex items-center gap-4 mt-2">
+                  <label className="flex items-center gap-2 text-[10px] font-black uppercase cursor-pointer">
+                    <input type="checkbox" checked={p.smoking} onChange={(e) => setPatient({ ...p, smoking: e.target.checked })} className="w-3 h-3 accent-emerald-800" />
+                    Smoking
+                  </label>
+                  <label className="flex items-center gap-2 text-[10px] font-black uppercase cursor-pointer">
+                    <input type="checkbox" checked={p.family_history} onChange={(e) => setPatient({ ...p, family_history: e.target.checked })} className="w-3 h-3 accent-emerald-800" />
+                    Family History
+                  </label>
+                </div>
               </div>
+
+              <button
+                onClick={reAnalyze}
+                disabled={loadingAnalyze}
+                className={`w-full py-4 border-[3px] border-black font-black text-[14px] uppercase tracking-widest shadow-[4px_4px_0px_#000] transition-all flex items-center justify-center gap-2 ${extractNotice ? 'animate-pulse border-emerald-600 bg-emerald-50' : 'bg-white'
+                  } hover:translate-x-1 hover:translate-y-1 hover:shadow-none disabled:opacity-50`}
+              >
+                {loadingAnalyze ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {loadingAnalyze ? 'ANALYZING...' : 'RE-ANALYZE TWIN'}
+              </button>
             </div>
 
             {/* Center: Digital Twin Projection */}
@@ -253,7 +315,7 @@ export default function DashboardPage() {
               <div className="flex-1 flex items-center justify-center w-full">
                 <BodySVGInput age={p.age || 0} systolic={Number(p.systolic_bp) || 0}
                   diastolic={Number(p.diastolic_bp) || 0} cholesterol={Number(p.cholesterol_total) || 0}
-                  glucose={p.glucose || 0} bmi={bmi} />
+                  glucose={p.glucose || 0} bmi={bmiCalc} />
               </div>
             </div>
 
@@ -306,7 +368,7 @@ export default function DashboardPage() {
 
             {/* Right Column: Detailed Analysis */}
             <div className="p-8 flex flex-col gap-6 overflow-y-auto bg-white">
-               <div className="flex items-center gap-4 p-4 border-[3px] border-black shadow-[4px_4px_0px_#000] bg-[#F8F5EE]">
+              <div className="flex items-center gap-4 p-4 border-[3px] border-black shadow-[4px_4px_0px_#000] bg-[#F8F5EE]">
                 <div className="w-12 h-12 flex items-center justify-center text-white font-black text-lg bg-[#1B5E3B] border-[2px] border-black">{initials}</div>
                 <div className="flex-1">
                   <div className="font-black text-xl uppercase tracking-tighter">{p.name}</div>
@@ -447,8 +509,8 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="p-6 border-[4px] border-black bg-[#F7EDD0]">
-               <h2 className="text-[18px] font-black uppercase mb-4 border-b-[2px] border-black pb-2">Risk Stratification</h2>
-               <div className="space-y-3">
+              <h2 className="text-[18px] font-black uppercase mb-4 border-b-[2px] border-black pb-2">Risk Stratification</h2>
+              <div className="space-y-3">
                 {['cardiac', 'diabetes', 'hypertension'].map(k => (
                   <div key={k} className="flex justify-between items-center">
                     <span className="font-black opacity-40 uppercase text-[10px]">{k}</span>
