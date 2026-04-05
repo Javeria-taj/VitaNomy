@@ -63,7 +63,7 @@ function NavItem({ icon, label, t, activeTab, setActiveTab }:
 }
 
 // ─── Panel Header ─────────────────────────────────────────────────────────────
-function PanelHeader({ title, sub, action }: { title: string; sub: string; action?: { label: string; primary?: boolean } }) {
+function PanelHeader({ title, sub, action, onClick }: { title: string; sub: string; action?: { label: string; primary?: boolean }, onClick?: () => void }) {
   return (
     <div className="flex items-start justify-between pb-5 mb-6 border-b-[4px] border-black">
       <div>
@@ -71,7 +71,9 @@ function PanelHeader({ title, sub, action }: { title: string; sub: string; actio
         <p className="text-[11px] font-bold tracking-widest uppercase mt-1" style={{ color: C.mu }}>{sub}</p>
       </div>
       {action && (
-        <button className="px-5 py-2.5 border-[3px] border-black font-black uppercase text-[11px] transition-all hover:translate-x-0.5 hover:translate-y-0.5"
+        <button 
+          onClick={onClick}
+          className="px-5 py-2.5 border-[3px] border-black font-black uppercase text-[11px] transition-all hover:translate-x-0.5 hover:translate-y-0.5"
           style={{
             backgroundColor: action.primary ? C.green : C.white,
             color: action.primary ? C.white : C.ink,
@@ -102,12 +104,69 @@ function InputField({ label, val, type = 'text', hint }: { label: string; val: s
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function AccountPage() {
-  const { patient, analysis } = usePatientStore()
+  const { patient, analysis, updatePatient, setLoading, loadingExtract } = usePatientStore()
   const p = patient
   const a = analysis
 
   const [activeTab, setActiveTab] = useState<TabKey>('profile')
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [extractStatus, setExtractStatus] = useState<string | null>(null)
   const [genderMode, setGenderMode] = useState<'m' | 'f'>('m')
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  const handleFileSelect = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !p) return
+
+    setIsExtracting(true)
+    setExtractStatus('Reading PDF...')
+    
+    try {
+      // 1. Read to Base64
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1]
+        
+        setExtractStatus('AI Extraction...')
+        // 2. Call Extract API
+        const res = await fetch('/api/extract', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pdf_base64: base64,
+            mode: p.mode || 'patient'
+          })
+        })
+
+        if (!res.ok) throw new Error('Extraction failed')
+
+        const data = await res.json()
+        
+        // 3. Update Store
+        updatePatient(data.extracted_fields)
+        setExtractStatus('Success! Twin updated.')
+        
+        setTimeout(() => {
+          setExtractStatus(null)
+          setIsExtracting(false)
+        }, 2000)
+      }
+      reader.readAsDataURL(file)
+
+    } catch (err) {
+      console.error(err)
+      setExtractStatus('Error extracting data.')
+      setTimeout(() => {
+        setExtractStatus(null)
+        setIsExtracting(false)
+      }, 3000)
+    }
+  }
 
   if (!p || !a) {
     return (
@@ -121,7 +180,7 @@ export default function AccountPage() {
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-mu">
             Your clinical account and twin telemetry are initialized during the medical intake process. Please complete your profile to unlock account management.
           </p>
-          <Link href="/onboarding" 
+          <Link href="/register" 
             className="px-10 py-5 border-[4px] border-black bg-green text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
             Complete Medical Intake &rarr;
           </Link>
@@ -352,9 +411,34 @@ export default function AccountPage() {
                 {/* ── PANEL 3: REPORTS ── */}
                 {activeTab === 'reports' && (
                   <div>
-                    <PanelHeader title="PDF Health Reports" sub="Shareable AI-generated clinical documents" action={{ label: '+ Generate New', primary: true }} />
+                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="application/pdf" className="hidden" />
+                    <PanelHeader title="PDF Health Reports" sub="Shareable AI-generated clinical documents" action={{ label: '+ Scan/Upload New PDF', primary: true }} onClick={handleFileSelect} />
 
                     <div className="grid grid-cols-2 gap-6">
+                      {/* Upload Tile */}
+                      <div className="border-[4px] border-black p-5 flex flex-col shadow-[6px_6px_0px_#000] cursor-pointer"
+                        style={{ backgroundColor: C.beige2 }} onClick={handleFileSelect}>
+                        <div className="flex items-start gap-4 mb-4">
+                           <div className="w-12 h-12 border-[3px] border-black flex items-center justify-center text-[20px] shadow-[3px_3px_0px_#000]"
+                                style={{ backgroundColor: C.white }}>
+                             {isExtracting ? '⏳' : '📎'}
+                           </div>
+                           <div>
+                              <div className="font-black text-[14px] uppercase leading-tight mb-1" style={{ color: C.ink }}>
+                                 {isExtracting ? extractStatus : 'Upload Medical Record'}
+                              </div>
+                              <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>
+                                 {isExtracting ? 'Mapping to Twin...' : 'Synchronize new lab data'}
+                              </div>
+                           </div>
+                        </div>
+                        <div className="mt-auto">
+                            <div className="w-full h-2 border-[2px] border-black bg-white overflow-hidden">
+                                {isExtracting && <motion.div className="h-full bg-gold" animate={{ x: ['-100%', '100%'] }} transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }} />}
+                            </div>
+                        </div>
+                      </div>
+
                       {[
                         { t: 'Full Health Assessment', d: 'Apr 1', i: '📋', tag: 'Full Analysis', col: C.gold },
                         { t: 'Clean Living Simulation', d: 'Apr 4', i: '⚡', tag: '1-Month Forecast', col: C.green },

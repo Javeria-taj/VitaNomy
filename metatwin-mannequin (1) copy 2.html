@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetaTwin — Digital Mannequin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f5f0e8;
+    --cream-dark: #e8e0d0;
+    --green: #1a3a2a;
+    --green-mid: #2d5a42;
+    --green-light: #3d7a5a;
+    --gold: #b8960c;
+    --gold-light: #d4b44a;
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --amber: #d4a017;
+    --green-ok: #27ae60;
+    --purple: #7c5cbf;
+    --stroke: #1a3a2a;
+    --stroke-light: rgba(26, 58, 42, 0.25);
+    --stroke-grid: rgba(26, 58, 42, 0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--green);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .twin-container {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    height: 100vh;
+    max-height: 750px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── The Mannequin SVG ── */
+  .mannequin-wrap {
+    position: relative;
+    width: 320px;
+    height: 680px;
+  }
+
+  .mannequin-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Body segments */
+  .body-segment {
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .body-segment:hover .segment-fill {
+    stroke: var(--green-light);
+    stroke-width: 2.2;
+    filter: drop-shadow(0 0 8px rgba(26, 58, 42, 0.2));
+  }
+
+  .body-segment.active .segment-fill {
+    stroke: var(--gold);
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 12px rgba(184, 150, 12, 0.3));
+  }
+
+  .body-segment.status-critical .segment-fill {
+    stroke: var(--red);
+    stroke-width: 2;
+    animation: pulse-critical 2s ease-in-out infinite;
+  }
+
+  .body-segment.status-warning .segment-fill {
+    stroke: var(--amber);
+    stroke-width: 1.8;
+    animation: pulse-warning 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-critical {
+    0%, 100% { filter: drop-shadow(0 0 4px rgba(192, 57, 43, 0.2)); }
+    50% { filter: drop-shadow(0 0 14px rgba(192, 57, 43, 0.45)); }
+  }
+
+  @keyframes pulse-warning {
+    0%, 100% { filter: drop-shadow(0 0 3px rgba(212, 160, 23, 0.15)); }
+    50% { filter: drop-shadow(0 0 10px rgba(212, 160, 23, 0.35)); }
+  }
+
+  /* Joint circles */
+  .joint {
+    fill: var(--cream);
+    stroke: var(--stroke);
+    stroke-width: 1.5;
+    transition: all 0.3s;
+  }
+
+  .body-segment:hover .joint,
+  .body-segment.active .joint {
+    fill: var(--green);
+    stroke: var(--gold);
+  }
+
+  .body-segment.active .joint {
+    fill: var(--gold);
+    stroke: var(--green);
+  }
+
+  /* Wireframe grid overlay */
+  .grid-line {
+    stroke: var(--stroke-grid);
+    stroke-width: 0.5;
+    fill: none;
+    pointer-events: none;
+  }
+
+  /* ── Floating Vital Badges ── */
+  .vital-badge {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--cream);
+    border: 1.5px solid var(--green);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--green);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(8px);
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 2px 12px rgba(26, 58, 42, 0.08);
+    z-index: 20;
+  }
+
+  .vital-badge.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .vital-badge::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-right: 7px solid var(--green);
+  }
+
+  .vital-badge.left-side::before {
+    left: auto;
+    right: -8px;
+    border-right: none;
+    border-left: 7px solid var(--green);
+  }
+
+  .vital-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .vital-dot.ok { background: var(--green-ok); }
+  .vital-dot.warning { background: var(--amber); }
+  .vital-dot.critical { background: var(--red); }
+  .vital-dot.info { background: var(--purple); }
+
+  /* Connection lines from badge to body */
+  .connector-line {
+    position: absolute;
+    height: 1.5px;
+    background: var(--green);
+    transform-origin: left center;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 15;
+  }
+
+  .connector-line.visible { opacity: 0.3; }
+
+  /* ── Detail Panel (appears on click) ── */
+  .detail-card {
+    position: absolute;
+    right: -340px;
+    top: 50%;
+    transform: translateY(-50%) translateX(20px);
+    width: 300px;
+    background: var(--cream);
+    border: 2px solid var(--green);
+    border-radius: 12px;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 8px 32px rgba(26, 58, 42, 0.1);
+    z-index: 30;
+  }
+
+  .detail-card.visible {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+    pointer-events: auto;
+  }
+
+  .detail-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--stroke-light);
+  }
+
+  .detail-card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--green);
+  }
+
+  .detail-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1.5px solid;
+  }
+
+  .detail-status.healthy { color: var(--green-ok); border-color: var(--green-ok); background: rgba(39,174,96,0.08); }
+  .detail-status.warning { color: var(--amber); border-color: var(--amber); background: rgba(212,160,23,0.08); }
+  .detail-status.critical { color: var(--red); border-color: var(--red); background: rgba(192,57,43,0.08); }
+
+  .detail-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .detail-stat {
+    background: rgba(26, 58, 42, 0.04);
+    border-radius: 8px;
+    padding: 10px;
+  }
+
+  .detail-stat-label {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(26, 58, 42, 0.45);
+    margin-bottom: 4px;
+  }
+
+  .detail-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .detail-stat-value.ok { color: var(--green-ok); }
+  .detail-stat-value.warn { color: var(--amber); }
+  .detail-stat-value.crit { color: var(--red); }
+
+  .detail-risk {
+    margin-bottom: 14px;
+  }
+
+  .detail-risk-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(26, 58, 42, 0.45);
+    margin-bottom: 6px;
+  }
+
+  .risk-track {
+    height: 6px;
+    background: rgba(26, 58, 42, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .risk-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+
+  .detail-alert {
+    font-size: 12px;
+    color: rgba(26, 58, 42, 0.65);
+    line-height: 1.6;
+    padding: 10px 12px;
+    border-left: 3px solid var(--red);
+    background: rgba(192, 57, 43, 0.04);
+    border-radius: 0 6px 6px 0;
+    margin-top: 10px;
+  }
+
+  .detail-alert.warn-alert {
+    border-left-color: var(--amber);
+    background: rgba(212, 160, 23, 0.04);
+  }
+
+  .detail-close {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 24px; height: 24px;
+    border: 1px solid var(--stroke-light);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--green);
+    transition: all 0.2s;
+  }
+
+  .detail-close:hover {
+    background: var(--green);
+    color: var(--cream);
+  }
+
+  /* ── Scan animation ── */
+  .scan-line {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green-light), transparent);
+    opacity: 0.2;
+    animation: scanDown 5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  @keyframes scanDown {
+    0% { top: 5%; }
+    50% { top: 92%; }
+    100% { top: 5%; }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 700px) {
+    .detail-card {
+      right: auto;
+      left: 50%;
+      top: auto;
+      bottom: 20px;
+      transform: translateX(-50%) translateY(20px);
+      width: 90vw;
+    }
+    .detail-card.visible {
+      transform: translateX(-50%) translateY(0);
+    }
+    .vital-badge { font-size: 10px; padding: 4px 9px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="twin-container" id="twinContainer">
+  <div class="scan-line"></div>
+
+  <div class="mannequin-wrap" id="mannequinWrap">
+    <svg class="mannequin-svg" viewBox="0 0 320 680" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="segGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(26,58,42,0.06)"/>
+          <stop offset="100%" stop-color="rgba(26,58,42,0.02)"/>
+        </linearGradient>
+      </defs>
+
+      <!-- ═══ WIREFRAME GRID BACKGROUND ═══ -->
+      <g class="wireframe-grid" opacity="0.5">
+        <!-- Vertical grid lines on torso area -->
+        <line class="grid-line" x1="130" y1="130" x2="130" y2="340"/>
+        <line class="grid-line" x1="145" y1="120" x2="145" y2="340"/>
+        <line class="grid-line" x1="160" y1="110" x2="160" y2="340"/>
+        <line class="grid-line" x1="175" y1="120" x2="175" y2="340"/>
+        <line class="grid-line" x1="190" y1="120" x2="190" y2="340"/>
+        <!-- Horizontal grid lines -->
+        <line class="grid-line" x1="110" y1="160" x2="210" y2="160"/>
+        <line class="grid-line" x1="108" y1="190" x2="212" y2="190"/>
+        <line class="grid-line" x1="105" y1="220" x2="215" y2="220"/>
+        <line class="grid-line" x1="108" y1="250" x2="212" y2="250"/>
+        <line class="grid-line" x1="110" y1="280" x2="210" y2="280"/>
+        <line class="grid-line" x1="115" y1="310" x2="205" y2="310"/>
+      </g>
+
+      <!-- ═══ MANNEQUIN BODY ═══ -->
+
+      <!-- HEAD -->
+      <g class="body-segment" data-zone="head">
+        <ellipse class="segment-fill" cx="160" cy="52" rx="30" ry="38"
+          fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.5"/>
+        <!-- Face center line -->
+        <line x1="160" y1="22" x2="160" y2="82" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+        <line x1="138" y1="50" x2="182" y2="50" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+        <!-- Chin detail -->
+        <path d="M145 72 Q160 86 175 72" fill="none" stroke="var(--stroke-light)" stroke-width="0.6"/>
+      </g>
+
+      <!-- NECK -->
+      <rect x="149" y="88" width="22" height="24" rx="6"
+        fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.2"/>
+
+      <!-- NECK JOINT -->
+      <circle class="joint" cx="160" cy="88" r="6"/>
+
+      <!-- ═══ TORSO ═══ -->
+      <g class="body-segment" data-zone="chest">
+        <path class="segment-fill" d="
+          M118 118
+          Q115 120 112 145
+          L108 200
+          L108 230
+          Q110 235 118 238
+          L160 244
+          L202 238
+          Q210 235 212 230
+          L212 200
+          L208 145
+          Q205 120 202 118
+          L185 112
+          Q160 108 135 112
+          Z
+        " fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.5"/>
+
+        <!-- Chest cross lines (wireframe detail) -->
+        <line x1="125" y1="145" x2="195" y2="145" stroke="var(--stroke-grid)" stroke-width="0.6"/>
+        <line x1="120" y1="175" x2="200" y2="175" stroke="var(--stroke-grid)" stroke-width="0.6"/>
+        <line x1="118" y1="205" x2="202" y2="205" stroke="var(--stroke-grid)" stroke-width="0.6"/>
+        <line x1="160" y1="118" x2="160" y2="244" stroke="var(--stroke-grid)" stroke-width="0.6"/>
+        <!-- Collarbone -->
+        <path d="M135 122 Q148 116 160 118 Q172 116 185 122" fill="none" stroke="var(--stroke-light)" stroke-width="0.8"/>
+      </g>
+
+      <!-- SHOULDER JOINTS -->
+      <circle class="joint" cx="112" cy="124" r="9" stroke-width="1.8"/>
+      <circle class="joint" cx="208" cy="124" r="9" stroke-width="1.8"/>
+
+      <!-- ═══ ABDOMEN (separate zone) ═══ -->
+      <g class="body-segment status-critical" data-zone="abdomen">
+        <path class="segment-fill" d="
+          M118 238
+          L160 244
+          L202 238
+          L205 270
+          Q205 290 200 310
+          L192 330
+          Q175 342 160 344
+          Q145 342 128 330
+          L120 310
+          Q115 290 115 270
+          Z
+        " fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.5"/>
+
+        <!-- Grid on abdomen -->
+        <line x1="122" y1="265" x2="198" y2="265" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+        <line x1="125" y1="295" x2="195" y2="295" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+        <line x1="130" y1="320" x2="190" y2="320" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+        <line x1="160" y1="244" x2="160" y2="344" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+      </g>
+
+      <!-- ═══ LEFT ARM (upper) ═══ -->
+      <g class="body-segment" data-zone="leftArm">
+        <path class="segment-fill" d="
+          M104 130
+          Q92 138 85 165
+          L78 210
+          Q76 220 80 225
+          L90 222
+          Q96 210 100 185
+          L108 155
+          Q112 138 110 130
+          Z
+        " fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.3"/>
+        <!-- Wireframe line -->
+        <line x1="92" y1="145" x2="84" y2="215" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+      </g>
+
+      <!-- LEFT ELBOW JOINT -->
+      <circle class="joint" cx="80" cy="223" r="7"/>
+
+      <!-- LEFT FOREARM -->
+      <g class="body-segment" data-zone="leftArm">
+        <path class="segment-fill" d="
+          M74 230
+          Q68 258 64 290
+          L60 320
+          Q58 328 62 332
+          L72 330
+          Q76 322 80 295
+          L84 260
+          Q86 240 86 230
+          Z
+        " fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.3"/>
+      </g>
+
+      <!-- LEFT HAND -->
+      <ellipse cx="63" cy="342" rx="14" ry="18"
+        fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.2"/>
+
+      <!-- ═══ RIGHT ARM (upper) ═══ -->
+      <g class="body-segment" data-zone="rightArm">
+        <path class="segment-fill" d="
+          M216 130
+          Q228 138 235 165
+          L242 210
+          Q244 220 240 225
+          L230 222
+          Q224 210 220 185
+          L212 155
+          Q208 138 210 130
+          Z
+        " fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.3"/>
+        <line x1="228" y1="145" x2="236" y2="215" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+      </g>
+
+      <!-- RIGHT ELBOW JOINT -->
+      <circle class="joint" cx="240" cy="223" r="7"/>
+
+      <!-- RIGHT FOREARM -->
+      <g class="body-segment" data-zone="rightArm">
+        <path class="segment-fill" d="
+          M246 230
+          Q252 258 256 290
+          L260 320
+          Q262 328 258 332
+          L248 330
+          Q244 322 240 295
+          L236 260
+          Q234 240 234 230
+          Z
+        " fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.3"/>
+      </g>
+
+      <!-- RIGHT HAND -->
+      <ellipse cx="257" cy="342" rx="14" ry="18"
+        fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.2"/>
+
+      <!-- ═══ HIP JOINTS ═══ -->
+      <circle class="joint" cx="128" cy="340" r="9" stroke-width="1.8"/>
+      <circle class="joint" cx="192" cy="340" r="9" stroke-width="1.8"/>
+
+      <!-- ═══ LEFT LEG (thigh) ═══ -->
+      <g class="body-segment" data-zone="leftLeg">
+        <path class="segment-fill" d="
+          M118 348
+          Q112 370 108 400
+          L105 440
+          Q103 455 107 462
+          L125 460
+          Q129 450 129 430
+          L130 400
+          Q131 370 134 348
+          Z
+        " fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.3"/>
+        <line x1="118" y1="360" x2="114" y2="450" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+      </g>
+
+      <!-- LEFT KNEE JOINT -->
+      <g class="body-segment status-warning" data-zone="leftKnee">
+        <circle class="joint" cx="116" cy="468" r="10" stroke-width="2"/>
+      </g>
+
+      <!-- LEFT SHIN -->
+      <g class="body-segment" data-zone="leftLeg">
+        <path class="segment-fill" d="
+          M106 478
+          Q103 510 100 545
+          L98 585
+          Q96 598 100 604
+          L118 602
+          Q122 594 122 575
+          L124 540
+          Q125 510 126 478
+          Z
+        " fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.3"/>
+        <line x1="112" y1="490" x2="108" y2="595" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+      </g>
+
+      <!-- LEFT FOOT -->
+      <path d="M94 602 Q90 618 94 625 L124 628 Q132 624 132 616 L126 602"
+        fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.3"/>
+
+      <!-- ═══ RIGHT LEG (thigh) ═══ -->
+      <g class="body-segment" data-zone="rightLeg">
+        <path class="segment-fill" d="
+          M202 348
+          Q208 370 212 400
+          L215 440
+          Q217 455 213 462
+          L195 460
+          Q191 450 191 430
+          L190 400
+          Q189 370 186 348
+          Z
+        " fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.3"/>
+        <line x1="200" y1="360" x2="206" y2="450" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+      </g>
+
+      <!-- RIGHT KNEE JOINT -->
+      <circle class="joint" cx="204" cy="468" r="10"/>
+
+      <!-- RIGHT SHIN -->
+      <g class="body-segment" data-zone="rightLeg">
+        <path class="segment-fill" d="
+          M214 478
+          Q217 510 220 545
+          L222 585
+          Q224 598 220 604
+          L198 602
+          Q194 594 194 575
+          L196 540
+          Q195 510 194 478
+          Z
+        " fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.3"/>
+        <line x1="208" y1="490" x2="212" y2="595" stroke="var(--stroke-grid)" stroke-width="0.5"/>
+      </g>
+
+      <!-- RIGHT FOOT -->
+      <path d="M226 602 Q230 618 226 625 L196 628 Q188 624 188 616 L194 602"
+        fill="url(#segGrad)" stroke="var(--stroke)" stroke-width="1.3"/>
+
+      <!-- ═══ STAND / BASE ═══ -->
+      <ellipse cx="150" cy="640" rx="55" ry="10"
+        fill="none" stroke="var(--stroke-light)" stroke-width="1" stroke-dasharray="3,3"/>
+
+    </svg>
+  </div>
+
+  <!-- ═══ VITAL BADGES ═══ -->
+  <div class="vital-badge visible" id="badge-glucose" style="right: calc(50% - 290px); top: 200px;">
+    <div class="vital-dot ok"></div>
+    <span>Glucose: 118 mg/dL</span>
+  </div>
+
+  <div class="vital-badge visible" id="badge-bp" style="right: calc(50% - 310px); top: 280px;">
+    <div class="vital-dot critical"></div>
+    <span>BP: 138 / 88</span>
+  </div>
+
+  <div class="vital-badge visible left-side" id="badge-hr" style="left: calc(50% - 300px); top: 170px;">
+    <div class="vital-dot warning"></div>
+    <span>HR: 78 bpm</span>
+  </div>
+
+  <div class="vital-badge visible" id="badge-bmi" style="right: calc(50% - 280px); top: 400px;">
+    <div class="vital-dot info"></div>
+    <span>BMI: 30.1</span>
+  </div>
+
+  <div class="vital-badge visible left-side" id="badge-alt" style="left: calc(50% - 290px); top: 290px;">
+    <div class="vital-dot critical"></div>
+    <span>ALT: 72 U/L ↑</span>
+  </div>
+
+  <div class="vital-badge visible left-side" id="badge-gfr" style="left: calc(50% - 280px); top: 365px;">
+    <div class="vital-dot warning"></div>
+    <span>GFR: 68 mL/min ↓</span>
+  </div>
+
+  <!-- ═══ DETAIL CARD ═══ -->
+  <div class="detail-card" id="detailCard">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div id="detailInner"></div>
+  </div>
+</div>
+
+<script>
+// ── Data ──
+const zoneData = {
+  head: {
+    name: 'Brain', status: 'healthy',
+    stats: [
+      { l: 'Cognitive', v: '94/100', c: 'ok' },
+      { l: 'Sleep', v: '78%', c: 'ok' },
+      { l: 'Stress', v: '32/100', c: 'ok' },
+      { l: 'Neural', v: 'Normal', c: 'ok' }
+    ],
+    risk: 12,
+    alert: null
+  },
+  chest: {
+    name: 'Heart & Lungs', status: 'warning',
+    stats: [
+      { l: 'Heart Rate', v: '88 bpm', c: 'warn' },
+      { l: 'Blood Pr.', v: '142/91', c: 'crit' },
+      { l: 'SpO₂', v: '97%', c: 'ok' },
+      { l: 'HRV', v: '38 ms', c: 'warn' }
+    ],
+    risk: 62,
+    alert: '34% probability of Stage 2 Hypertension within 6 months. Lifestyle intervention recommended.'
+  },
+  abdomen: {
+    name: 'Liver & Kidneys', status: 'critical',
+    stats: [
+      { l: 'ALT', v: '72 U/L', c: 'crit' },
+      { l: 'AST', v: '58 U/L', c: 'warn' },
+      { l: 'GFR', v: '68 mL/m', c: 'warn' },
+      { l: 'Albumin', v: '3.4 g/dL', c: 'warn' }
+    ],
+    risk: 78,
+    alert: 'Liver enzymes suggest NAFLD. 45% chance of NASH progression within 12 months without dietary intervention.'
+  },
+  leftArm: {
+    name: 'Left Arm', status: 'healthy',
+    stats: [
+      { l: 'Grip Str.', v: '42 kg', c: 'ok' },
+      { l: 'Reflex', v: 'Normal', c: 'ok' },
+      { l: 'Circ.', v: 'Good', c: 'ok' },
+      { l: 'ROM', v: '180°', c: 'ok' }
+    ],
+    risk: 5,
+    alert: null
+  },
+  rightArm: {
+    name: 'Right Arm', status: 'healthy',
+    stats: [
+      { l: 'Grip Str.', v: '44 kg', c: 'ok' },
+      { l: 'Reflex', v: 'Normal', c: 'ok' },
+      { l: 'Circ.', v: 'Good', c: 'ok' },
+      { l: 'ROM', v: '180°', c: 'ok' }
+    ],
+    risk: 5,
+    alert: null
+  },
+  leftKnee: {
+    name: 'Left Knee', status: 'warning',
+    stats: [
+      { l: 'Cartilage', v: 'Mild wear', c: 'warn' },
+      { l: 'Swelling', v: 'Trace', c: 'warn' },
+      { l: 'Flex', v: '135°', c: 'ok' },
+      { l: 'Stability', v: 'Good', c: 'ok' }
+    ],
+    risk: 35,
+    alert: 'Early osteoarthritic changes detected. Quad strengthening and weight management recommended.'
+  },
+  leftLeg: {
+    name: 'Legs', status: 'healthy',
+    stats: [
+      { l: 'Strength', v: 'Good', c: 'ok' },
+      { l: 'Circ.', v: 'Normal', c: 'ok' },
+      { l: 'Reflex', v: 'Normal', c: 'ok' },
+      { l: 'Vascular', v: 'Clear', c: 'ok' }
+    ],
+    risk: 8,
+    alert: null
+  },
+  rightLeg: {
+    name: 'Legs', status: 'healthy',
+    stats: [
+      { l: 'Strength', v: 'Good', c: 'ok' },
+      { l: 'Circ.', v: 'Normal', c: 'ok' },
+      { l: 'Reflex', v: 'Normal', c: 'ok' },
+      { l: 'Vascular', v: 'Clear', c: 'ok' }
+    ],
+    risk: 8,
+    alert: null
+  }
+};
+
+// ── Interactions ──
+let activeZone = null;
+
+document.querySelectorAll('.body-segment').forEach(seg => {
+  seg.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const zone = seg.dataset.zone;
+    if (!zone || !zoneData[zone]) return;
+    selectZone(zone);
+  });
+});
+
+function selectZone(zone) {
+  // Remove previous active
+  document.querySelectorAll('.body-segment').forEach(s => s.classList.remove('active'));
+
+  // Set new active on all segments with same zone
+  document.querySelectorAll(`[data-zone="${zone}"]`).forEach(s => s.classList.add('active'));
+
+  activeZone = zone;
+  showDetail(zone);
+}
+
+function showDetail(zone) {
+  const data = zoneData[zone];
+  const card = document.getElementById('detailCard');
+  const inner = document.getElementById('detailInner');
+
+  const riskColor = data.risk > 60 ? 'var(--red)' : data.risk > 30 ? 'var(--amber)' : 'var(--green-ok)';
+
+  let html = `
+    <div class="detail-card-header">
+      <div class="detail-card-title">${data.name}</div>
+      <div class="detail-status ${data.status}">${data.status}</div>
+    </div>
+    <div class="detail-stats">
+      ${data.stats.map(s => `
+        <div class="detail-stat">
+          <div class="detail-stat-label">${s.l}</div>
+          <div class="detail-stat-value ${s.c}">${s.v}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="detail-risk">
+      <div class="detail-risk-label">Risk Score — ${data.risk}%</div>
+      <div class="risk-track">
+        <div class="risk-fill" style="width:${data.risk}%; background: linear-gradient(90deg, var(--green-ok), ${riskColor});"></div>
+      </div>
+    </div>
+  `;
+
+  if (data.alert) {
+    const alertClass = data.status === 'critical' ? '' : 'warn-alert';
+    html += `<div class="detail-alert ${alertClass}">${data.alert}</div>`;
+  }
+
+  inner.innerHTML = html;
+  card.classList.add('visible');
+}
+
+function closeDetail() {
+  document.getElementById('detailCard').classList.remove('visible');
+  document.querySelectorAll('.body-segment').forEach(s => s.classList.remove('active'));
+  activeZone = null;
+}
+
+// Close on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.body-segment') && !e.target.closest('.detail-card')) {
+    closeDetail();
+  }
+});
+
+// ── Animate badges in on load ──
+setTimeout(() => {
+  document.querySelectorAll('.vital-badge').forEach((badge, i) => {
+    badge.style.transitionDelay = (i * 0.12) + 's';
+    badge.classList.add('visible');
+  });
+}, 300);
+</script>
+</body>
+</html>

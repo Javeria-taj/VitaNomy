@@ -99,9 +99,9 @@ export default function ChatPage() {
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-mu">
             Dr. Vita needs your clinical twin data to provide personalized medical insights. Please complete your intake to start the conversation.
           </p>
-          <Link href="/onboarding" 
+          <Link href="/register" 
             className="px-10 py-5 border-[4px] border-black bg-darkGreen text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-            Initialize Twin &rarr;
+            Complete Medical Intake &rarr;
           </Link>
         </div>
       </div>
@@ -125,20 +125,53 @@ export default function ChatPage() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [combinedChat])
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim() || loadingChat) return
     const userMsg = input.trim()
-    addChatMessage({ role: 'user', content: userMsg })
+    
+    // 1. Add user message to UI immediately
+    const userChatMessage: ChatMessage = { 
+      role: 'user', 
+      content: userMsg,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+    addChatMessage(userChatMessage)
     setInput('')
     
+    // 2. Call AI API
     setLoading('chat', true)
-    setTimeout(() => {
-      addChatMessage({ 
-        role: 'assistant', 
-        content: `Acknowledged. Based on your current clinical data (BP: ${p.systolic_bp}/${p.diastolic_bp} mmHg, Glucose: ${p.glucose} mg/dL), your twin suggests a high sensitivity to cortisol triggers. Running a complete simulation now...` 
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient: p,
+          analysis: analysis,
+          message: userMsg,
+          history: chatHistory // optional, but good for context
+        })
       })
+
+      if (!res.ok) {
+        throw new Error('Dr. Vita is currently unavailable. Please try again.')
+      }
+
+      const data = await res.json()
+      
+      // 3. Add AI response to Store
+      addChatMessage({
+        ...data.message,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      })
+    } catch (err: any) {
+      addChatMessage({
+        role: 'assistant',
+        content: `⚠ Error: ${err.message || 'Connection lost.'}`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      })
+    } finally {
       setLoading('chat', false)
-    }, 1500)
+    }
   }
 
   return (

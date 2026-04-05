@@ -1,13 +1,15 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { SimulatorBody } from '@/components/Simulator/SimulatorBody'
 import { RiskGauge } from '@/components/Simulator/RiskGauge'
 import Link from 'next/link'
 import { usePatientStore } from '@/store/patientStore'
-import { AnyPatientInput, AnalyzeResponse, PatientInput } from '@/types/patient'
+import { AnyPatientInput, AnalyzeResponse, PatientInput, AthleteInput, Compound } from '@/types/patient'
 import { Topbar } from '@/components/Layout/Topbar'
+import { CompoundLogForm } from '@/components/Form/CompoundLogForm'
+import { Zap, Info, Loader2 } from 'lucide-react'
 
 const getScore = (val: any): number => typeof val === 'number' ? val : (val?.score ?? 0)
 
@@ -146,10 +148,16 @@ export default function SimulatorPage() {
   const [timeline, setTimeline] = useState('1M')
   const [isSimulating, setIsSimulating] = useState(false)
 
-  const { patient, analysis, setMode } = usePatientStore()
+  const { patient, analysis, mode, setMode, setSimulation, setLoading, loadingSimulate } = usePatientStore()
 
-  // --- BASELINE (From Store or Default) ---
-  const baseline = (analysis && patient) ? {
+  // --- ATHLETE SPECIFIC SIM STATE ---
+  const [simAlt, setSimAlt] = useState(40)
+  const [simHematocrit, setSimHematocrit] = useState(45)
+  const [simCompounds, setSimCompounds] = useState<Compound[]>([])
+  const [isPct, setIsPct] = useState(false)
+
+  // --- BASELINE ---
+  const baseline = useMemo(() => (analysis && patient) ? {
     vitals: {
       bp: `${patient.systolic_bp || 120}/${patient.diastolic_bp || 80}`,
       glucose: patient.glucose || 100,
@@ -161,17 +169,18 @@ export default function SimulatorPage() {
       cardiac: getScore(analysis.risk_scores.cardiac),
       hypertension: getScore(analysis.risk_scores.hypertension)
     },
-    score: 72
-  } : null
+    score: analysis.risk_scores.overall_score || 72
+  } : null, [analysis, patient])
 
   const [sim, setSim] = useState(baseline || { vitals: { bp: '0/0', glucose: 0, hr: 0, bmi: 0 }, risks: { diabetes: 0, cardiac: 0, hypertension: 0 }, score: 0 })
+  const [narrative, setNarrative] = useState<string | null>(null)
 
   useEffect(() => {
     if (baseline) setSim(baseline)
   }, [baseline])
 
   useEffect(() => {
-    setMode('patient') // Use patient mode for simulator view
+    setMode('patient')
     if (patient && patient.mode === 'patient') {
       const p = patient as PatientInput
       setCal(2000)
@@ -183,30 +192,94 @@ export default function SimulatorPage() {
     }
   }, [patient, setMode])
 
-  const runSimulation = () => {
+  const runSimulation = async () => {
     if (!baseline || !patient) return
     setIsSimulating(true)
-    setTimeout(() => {
-      // Logic using baseline and adjustments
-      const p = patient as PatientInput
-      const newBpSys = Math.max(110, (p?.systolic_bp || 138) - (exercise * 2) - (isMeds ? 10 : 0) + (sodium > 3000 ? 8 : 0) + (stress > 7 ? 6 : 0))
-      const newBpDia = Math.max(70, (p?.diastolic_bp || 88) - (exercise * 1) - (isMeds ? 5 : 0) + (sodium > 3000 ? 4 : 0))
-      const newGlucose = Math.max(85, (p?.glucose || 118) - (carb < 100 ? 15 : 0) - (exercise * 3) + (cal > 2500 ? 10 : 0))
-      const newHr = Math.max(60, 78 - (exercise * 2) - (sleep > 7 ? 4 : 0) + (stress > 7 ? 8 : 0))
-      const newBmi = Math.max(22, (baseline.vitals.bmi) - (exercise * 0.5) - (cal < 1500 ? 1.5 : 0) + (cal > 2500 ? 1 : 0))
+    setLoading('simulate', true)
 
-      const newDiabRisk = Math.max(5, (baseline.risks.diabetes) - (newGlucose < 100 ? 15 : 0) - (exercise * 5))
-      const newCardRisk = Math.max(8, (baseline.risks.cardiac) - (exercise * 6) - (isSmoker ? -15 : 0) - (isMeds ? 10 : 0))
-      const newHyperRisk = Math.max(10, (baseline.risks.hypertension) - (newBpSys < 125 ? 20 : 0) - (sodium < 1500 ? 10 : 0))
-      const newScore = Math.min(98, (baseline.score) + (exercise > 3 ? 10 : 0) + (sleep > 7 ? 5 : 0) - (isSmoker ? 12 : 0))
+    try {
+      // 1. Construct modified patient from sliders
+      let modifiedPatient: AnyPatientInput;
+      
+      if (mode === 'athlete') {
+        modifiedPatient = {
+          ...(patient as AthleteInput),
+          mode: 'athlete',
+          alt: simAlt,
+          hematocrit: simHematocrit,
+          compounds: simCompounds,
+          pct_active: isPct
+        }
+      } else {
+        modifiedPatient = {
+          ...patient,
+          mode: 'patient',
+          weight: patient.weight - (exercise * 0.1),
+          exercise: exercise >= 4 ? 'heavy' : exercise >= 2 ? 'moderate' : 'none',
+          smoking: isSmoker,
+          glucose: (patient.glucose || 100) - (carb < 100 ? 10 : 0),
+          systolic_bp: (patient.systolic_bp || 120) - (isMeds ? 10 : 0) - (sodium < 2000 ? 5 : 0)
+        }
+      }
 
-      setSim({
-        vitals: { bp: `${Math.round(newBpSys)}/${Math.round(newBpDia)}`, glucose: Math.round(newGlucose), hr: Math.round(newHr), bmi: parseFloat(newBmi.toFixed(1)) },
-        risks: { diabetes: Math.round(newDiabRisk), cardiac: Math.round(newCardRisk), hypertension: Math.round(newHyperRisk) },
-        score: Math.round(newScore)
+      // 2. Call API
+      const res = await fetch('/api/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient: patient,
+          scenario: 'custom',
+          modifiedPatient: modifiedPatient
+        })
       })
+
+      if (!res.ok) throw new Error('Simulation failed')
+
+      const data = await res.json()
+      
+      // 3. Update local state for UI
+      if (mode === 'athlete') {
+        const pRisk = data.projected_risks
+        setSim({
+          vitals: { 
+            bp: baseline.vitals.bp,
+            glucose: baseline.vitals.glucose,
+            hr: baseline.vitals.hr,
+            bmi: baseline.vitals.bmi 
+          },
+          risks: { 
+            cardiovascular: getScore(pRisk.cardiovascular), 
+            hepatotoxicity: getScore(pRisk.hepatotoxicity), 
+            endocrine_suppression: getScore(pRisk.endocrine_suppression),
+            hematological: getScore(pRisk.hematological)
+          } as any,
+          score: Math.round(data.projected_risks.overall_score || baseline.score)
+        })
+      } else {
+        setSim({
+          vitals: { 
+            bp: `${Math.round((modifiedPatient as PatientInput).systolic_bp || 120)}/${Math.round(patient.diastolic_bp || 80)}`, 
+            glucose: Math.round((modifiedPatient as PatientInput).glucose || 100), 
+            hr: 72, 
+            bmi: baseline.vitals.bmi 
+          },
+          risks: { 
+            diabetes: getScore(data.projected_risks.diabetes), 
+            cardiac: getScore(data.projected_risks.cardiac), 
+            hypertension: getScore(data.projected_risks.hypertension) 
+          },
+          score: Math.round(data.projected_risks.overall_score || baseline.score + 5)
+        })
+      }
+      setNarrative(data.narrative)
+      setSimulation(data)
+
+    } catch (err) {
+      console.error(err)
+    } finally {
       setIsSimulating(false)
-    }, 800)
+      setLoading('simulate', false)
+    }
   }
 
   const applyScenario = (type: string) => {
@@ -230,9 +303,9 @@ export default function SimulatorPage() {
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-black/50">
             The What-If Simulator requires your baseline twin data to run projections. Please complete your clinical intake to unlock this module.
           </p>
-          <Link href="/onboarding" 
+          <Link href="/register" 
             className="px-10 py-5 border-[4px] border-black bg-[#1B5E3B] text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-            Unlock Simulator &rarr;
+            Complete Medical Intake &rarr;
           </Link>
         </div>
       </div>
@@ -304,59 +377,83 @@ export default function SimulatorPage() {
         ))}
       </div>
 
-      {/* ── MAIN 3-COL LAYOUT ────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[260px_1fr_300px]">
+        {/* ── MAIN 3-COL LAYOUT ────────────────────────────────────────────────── */}
+        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-[280px_1fr_300px]">
 
-        {/* ── LEFT: CONTROLS ───────────────────────────────────────────────── */}
-        <div
-          className="border-r-[3px] border-black p-5 flex flex-col gap-2 overflow-y-auto"
-          style={{ backgroundColor: '#F4F2E9' }}
-        >
-          {/* Diet section */}
-          <div className="mb-2">
-            <span className={SECTION_LABEL}>Diet & Nutrition</span>
-            <NeoSlider label="Daily Calories" value={cal} min={1200} max={3500} unit=" kcal" onChange={setCal} />
-            <NeoSlider label="Carb Intake" value={carb} min={20} max={400} unit="g" onChange={setCarb} />
-            <NeoSlider label="Sodium" value={sodium} min={500} max={5000} unit="mg" onChange={setSodium} warn={sodium > 2400} />
-          </div>
-
-          {/* Activity section */}
-          <div className="mb-2 pt-2 border-t-[2px] border-black/10">
-            <span className={SECTION_LABEL}>Activity</span>
-            <NeoToggleGroup
-              label="Exercise / Week"
-              options={[
-                { val: 0, label: 'None' },
-                { val: 2, label: '2×' },
-                { val: 4, label: '4×' },
-                { val: 7, label: 'Daily' },
-              ]}
-              value={exercise}
-              onChange={v => setExercise(v as number)}
-            />
-            <NeoSlider label="Sleep" value={sleep} min={4} max={10} step={0.5} unit="h" onChange={setSleep} />
-            <NeoSlider label="Stress Level" value={stress} min={1} max={10} unit="/10" onChange={setStress} warn={stress > 7} />
-          </div>
-
-          {/* Lifestyle toggles */}
-          <div className="mb-2 pt-2 border-t-[2px] border-black/10">
-            <span className={SECTION_LABEL}>Lifestyle</span>
-            <NeoSwitch label="Smoker" value={isSmoker} onChange={setIsSmoker} danger />
-            <NeoSwitch label="Medication" value={isMeds} onChange={setIsMeds} />
-          </div>
-
-          {/* Run button */}
-          <motion.button
-            whileHover={{ boxShadow: '6px 6px 0px #000000', x: -1, y: -1 }}
-            onClick={runSimulation}
-            disabled={isSimulating}
-            type="button"
-            className="w-full border-[3px] border-black py-4 text-[14px] font-black mt-2 disabled:opacity-50 disabled:cursor-wait transition-all"
-            style={{ backgroundColor: '#C9A84C', boxShadow: '4px 4px 0px #000000' }}
+          {/* ── LEFT: CONTROLS ───────────────────────────────────────────────── */}
+          <div
+            className="border-r-[3px] border-black p-5 flex flex-col gap-2 overflow-y-auto"
+            style={{ backgroundColor: '#F4F2E9' }}
           >
-            {isSimulating ? '⟳ Recalculating...' : 'Run Simulation →'}
-          </motion.button>
-        </div>
+            {mode === 'patient' ? (
+              <>
+                {/* Diet section */}
+                <div className="mb-2">
+                  <span className={SECTION_LABEL}>Diet & Nutrition</span>
+                  <NeoSlider label="Daily Calories" value={cal} min={1200} max={3500} unit=" kcal" onChange={setCal} />
+                  <NeoSlider label="Carb Intake" value={carb} min={20} max={400} unit="g" onChange={setCarb} />
+                  <NeoSlider label="Sodium" value={sodium} min={500} max={5000} unit="mg" onChange={setSodium} warn={sodium > 2400} />
+                </div>
+
+                {/* Activity section */}
+                <div className="mb-2 pt-2 border-t-[2px] border-black/10">
+                  <span className={SECTION_LABEL}>Activity</span>
+                  <NeoToggleGroup
+                    label="Exercise / Week"
+                    options={[
+                      { val: 0, label: 'None' },
+                      { val: 2, label: '2×' },
+                      { val: 4, label: '4×' },
+                      { val: 7, label: 'Daily' },
+                    ]}
+                    value={exercise}
+                    onChange={v => setExercise(v as number)}
+                  />
+                  <NeoSlider label="Sleep" value={sleep} min={4} max={10} step={0.5} unit="h" onChange={setSleep} />
+                  <NeoSlider label="Stress Level" value={stress} min={1} max={10} unit="/10" onChange={setStress} warn={stress > 7} />
+                </div>
+
+                {/* Lifestyle toggles */}
+                <div className="mb-2 pt-2 border-t-[2px] border-black/10">
+                  <span className={SECTION_LABEL}>Lifestyle</span>
+                  <NeoSwitch label="Smoker" value={isSmoker} onChange={setIsSmoker} danger />
+                  <NeoSwitch label="Medication" value={isMeds} onChange={setIsMeds} />
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Performance section */}
+                <div className="mb-2">
+                  <span className={SECTION_LABEL}>Performance Protocol</span>
+                  <div className="bg-white border-[2.5px] border-black p-3 mb-4 shadow-[3px_3px_0px_#000]">
+                    <div className="text-[11px] font-black uppercase mb-3 flex items-center gap-2">
+                      <Zap className="w-3 h-3 text-[#C9A84C]" /> Compound Log
+                    </div>
+                    <CompoundLogForm compounds={simCompounds} setCompounds={setSimCompounds} />
+                  </div>
+
+                  <NeoSlider label="Liver Stress (ALT)" value={simAlt} min={10} max={200} unit=" U/L" onChange={setSimAlt} warn={simAlt > 50} />
+                  <NeoSlider label="Hematocrit" value={simHematocrit} min={35} max={65} unit="%" onChange={setSimHematocrit} warn={simHematocrit > 52} />
+                  
+                  <div className="pt-2 border-t-[2px] border-black/10">
+                    <NeoSwitch label="Active PCT Mode" value={isPct} onChange={setIsPct} />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Run button */}
+            <motion.button
+              whileHover={{ boxShadow: '6px 6px 0px #000000', x: -1, y: -1 }}
+              onClick={runSimulation}
+              disabled={loadingSimulate}
+              type="button"
+              className="w-full border-[3px] border-black py-4 text-[14px] font-black mt-2 disabled:opacity-50 disabled:cursor-wait transition-all"
+              style={{ backgroundColor: '#C9A84C', boxShadow: '4px 4px 0px #000000' }}
+            >
+              {loadingSimulate ? '⟳ Recalculating...' : 'Run Simulation →'}
+            </motion.button>
+          </div>
 
         {/* ── CENTER: BODY SCANNER ─────────────────────────────────────────── */}
         <div
@@ -460,21 +557,48 @@ export default function SimulatorPage() {
 
           {/* Risk bars */}
           <div className="flex flex-col gap-3">
-            <RiskGauge
-              label="Diabetes" icon="🩸"
-              currentScore={sim.risks.diabetes} baselineScore={baseline.risks.diabetes}
-              unit="mg/dL" status={sim.risks.diabetes < 30 ? 'LOW RISK' : 'MODERATE'} color="#2E7D52"
-            />
-            <RiskGauge
-              label="Cardiac" icon="❤️"
-              currentScore={sim.risks.cardiac} baselineScore={baseline.risks.cardiac}
-              unit="bpm" status={sim.risks.cardiac < 45 ? 'MODERATE' : 'HIGH'} color="#C9A84C"
-            />
-            <RiskGauge
-              label="Hypertension" icon="🫀"
-              currentScore={sim.risks.hypertension} baselineScore={baseline.risks.hypertension}
-              unit="mmHg" status={sim.risks.hypertension < 30 ? 'CONTROLLED' : 'MODERATE'} color="#2E7D52"
-            />
+            {mode === 'patient' ? (
+              <>
+                <RiskGauge
+                  label="Diabetes" icon="🩸"
+                  currentScore={sim.risks.diabetes} baselineScore={baseline.risks.diabetes}
+                  unit="%" status={sim.risks.diabetes < 30 ? 'LOW RISK' : 'MODERATE'} color="#2E7D52"
+                />
+                <RiskGauge
+                  label="Cardiac" icon="❤️"
+                  currentScore={sim.risks.cardiac} baselineScore={baseline.risks.cardiac}
+                  unit="%" status={sim.risks.cardiac < 45 ? 'MODERATE' : 'HIGH'} color="#C9A84C"
+                />
+                <RiskGauge
+                  label="Hypertension" icon="🫀"
+                  currentScore={sim.risks.hypertension} baselineScore={baseline.risks.hypertension}
+                  unit="%" status={sim.risks.hypertension < 30 ? 'CONTROLLED' : 'MODERATE'} color="#2E7D52"
+                />
+              </>
+            ) : (
+              <>
+                <RiskGauge
+                  label="Hepatotoxicity" icon="🧪"
+                  currentScore={sim.risks.hepatotoxicity} baselineScore={baseline.risks.hepatotoxicity}
+                  unit="%" status={sim.risks.hepatotoxicity < 30 ? 'NORMAL' : 'ELELVATED'} color="#E07A5F"
+                />
+                <RiskGauge
+                  label="Endocrine Suppression" icon="⚖️"
+                  currentScore={sim.risks.endocrine_suppression} baselineScore={baseline.risks.endocrine_suppression}
+                  unit="%" status={sim.risks.endocrine_suppression < 40 ? 'STABLE' : 'CRITICAL'} color="#C9A84C"
+                />
+                 <RiskGauge
+                  label="Cardiovascular" icon="❤️"
+                  currentScore={sim.risks.cardiovascular} baselineScore={baseline.risks.cardiovascular}
+                  unit="%" status={sim.risks.cardiovascular < 30 ? 'MODERATE' : 'HIGH'} color="#2E7D52"
+                />
+                <RiskGauge
+                  label="Hematological" icon="🩸"
+                  currentScore={sim.risks.hematological} baselineScore={baseline.risks.hematological}
+                  unit="%" status={sim.risks.hematological < 30 ? 'NORMAL' : 'STRESSED'} color="#113826"
+                />
+              </>
+            )}
           </div>
 
           {/* Overall score change */}
@@ -509,18 +633,18 @@ export default function SimulatorPage() {
               ✦ AI Twin Insight
             </div>
             <div className="flex flex-col gap-2.5">
-              <div
-                className="text-[11px] font-bold leading-relaxed pl-3"
-                style={{ color: 'rgba(244,242,233,0.8)', borderLeft: '2px solid #C9A84C' }}
-              >
-                Reducing sodium to <b className="text-white">1,500mg</b> has the highest BP impact for {patient?.name.split(' ')[0] || 'your'} profile.
-              </div>
-              <div
-                className="text-[11px] font-bold leading-relaxed pl-3"
-                style={{ color: 'rgba(244,242,233,0.8)', borderLeft: '2px solid #C9A84C' }}
-              >
-                Glucose normalizes within <b className="text-white">3 weeks</b> on this carb-restricted protocol.
-              </div>
+              {narrative ? (
+                <div
+                  className="text-[11px] font-bold leading-relaxed pl-3 whitespace-pre-wrap"
+                  style={{ color: 'rgba(244,242,233,0.8)', borderLeft: '2px solid #C9A84C' }}
+                >
+                  {narrative}
+                </div>
+              ) : (
+                <div className="text-[11px] font-bold text-white/40 animate-pulse">
+                  Waiting for simulation narrative...
+                </div>
+              )}
             </div>
           </div>
         </div>

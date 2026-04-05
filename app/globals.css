@@ -1,35 +1,37 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;700&display=swap');
 
 @theme {
-  --color-cr: #F4F2E9;
-  --color-cr-2: #EDE7D8;
-  --color-cr-3: #E4DDD0;
-  --color-em: #1B5E3B;
-  --color-em-2: #113826;
-  --color-em-3: #2E7D52;
-  --color-em-p: #E4F0EA;
-  --color-gd: #C9A84C;
-  --color-gd-2: #E8C86E;
-  --color-gd-p: #F7EDD0;
-  --color-ink: #0A0F0D;
-  --color-tx: #1A2520;
-  --color-mu: #5C7268;
-  --color-mu-2: #8AA090;
+  /* Neo-Brutalism Base Colors */
+  --color-cr: #F4F2E9;      /* Off-white paper */
+  --color-em: #1B5E3B;      /* Deep Clinical Green */
+  --color-em-2: #113826;     /* Darkest Green */
+  --color-em-3: #2E7D52;     /* Medium Green */
+  --color-gd: #C9A84C;       /* Gold Accent */
+  --color-gd-p: #F7EDD0;     /* Pale Gold Surface */
+  --color-ink: #0A0F0D;      /* Deepest Black */
+  
+  /* Status Colors */
+  --color-danger: #C0392B;
+  --color-ok: #27AE60;
+  --color-warn: #D35400;
 
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #fafafa;
-  --color-border-tertiary: #eaeaea;
-  --color-text-secondary: #666666;
-  
-  --color-coral: #e07a5f;
-  --color-sage: #81b29a;
-  --color-crimson: #a32d2d;
-  
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  
-  --font-sans: system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  /* Spacing (Standard 4px base) */
+  --spacing-1: 4px; --spacing-2: 8px; --spacing-3: 12px; --spacing-4: 16px;
+  --spacing-6: 24px; --spacing-8: 32px; --spacing-12: 48px; --spacing-16: 64px;
+
+  /* Typography */
+  --font-display: 'Bebas Neue', 'Impact', sans-serif;
+  --font-body: 'Space Grotesk', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+
+  /* Neo-Brutalism Overrides */
+  --radius-none: 0px;
+  --radius-xs: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-full: 0px;
 }
 
 
