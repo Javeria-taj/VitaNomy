@@ -173,7 +173,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patient: p })
+        body: JSON.stringify(p)
       })
       if (!res.ok) throw new Error('Analysis failed')
       const data = await res.json()
@@ -271,9 +271,22 @@ export default function DashboardPage() {
   const bmi = p.height > 0 ? (p.weight / ((p.height / 100) ** 2)).toFixed(1) : '—'
   const initials = p.name ? p.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'AM'
 
-  const getStatus = (s: number) => s > 70 ? 'HIGH RISK' : s > 40 ? 'MODERATE' : 'LOW RISK'
-  const getColor = (s: number) => s > 70 ? C.danger : s > 40 ? C.warn : C.ok
-  const getBg = (s: number) => s > 70 ? '#FDE8E8' : s > 40 ? '#FEF0E5' : '#E8F5EE'
+  const getStatus = (s: number) => s > 70 ? 'CRITICAL' : s > 55 ? 'HIGH RISK' : s > 35 ? 'MODERATE' : 'LOW RISK'
+  const getColor = (s: number) => s > 70 ? C.danger : s > 55 ? C.danger : s > 35 ? C.warn : C.ok
+  const getBg = (s: number) => s > 70 ? '#FDE8E8' : s > 55 ? '#FDE8E8' : s > 35 ? '#FEF0E5' : '#E8F5EE'
+
+  const riskKeys = p.mode === 'athlete' 
+    ? [
+        { key: 'cardiovascular', label: 'Cardio' },
+        { key: 'hepatotoxicity', label: 'Liver' },
+        { key: 'endocrine_suppression', label: 'Endo' },
+        { key: 'hematological', label: 'Blood' }
+      ]
+    : [
+        { key: 'cardiac', label: 'Cardiac' },
+        { key: 'diabetes', label: 'Diabetes' },
+        { key: 'hypertension', label: 'H-Tension' }
+      ]
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: C.beige, fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -408,20 +421,20 @@ export default function DashboardPage() {
                   {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                 </span>
               </div>
-              <BodySVGResults cardiac={getScore(rs?.cardiac)} diabetes={getScore(rs?.diabetes)} hypertension={getScore(rs?.hypertension)} />
+              <BodySVGResults 
+                cardiac={getScore(rs?.cardiac || rs?.cardiovascular)} 
+                diabetes={getScore(rs?.diabetes || rs?.endocrine_suppression)} 
+                hypertension={getScore(rs?.hypertension || rs?.hematological)} 
+              />
 
               <div className="w-full flex flex-col gap-2 mt-6">
-                {[
-                  { label: 'Cardiac', score: getScore(rs?.cardiac) },
-                  { label: 'Diabetes', score: getScore(rs?.diabetes) },
-                  { label: 'Hypertension', score: getScore(rs?.hypertension) },
-                ].map(r => (
-                  <div key={r.label} className="flex items-center gap-2 p-3 border-[2px] border-black bg-white shadow-[2px_2px_0px_#000]">
-                    <div className="w-3 h-3 shrink-0" style={{ backgroundColor: getColor(r.score) }} />
+                {riskKeys.map(r => (
+                  <div key={r.key} className="flex items-center gap-2 p-3 border-[2px] border-black bg-white shadow-[2px_2px_0px_#000]">
+                    <div className="w-3 h-3 shrink-0" style={{ backgroundColor: getColor(getScore(rs?.[r.key])) }} />
                     <span className="text-[11px] font-black flex-1 uppercase">{r.label}</span>
                     <span className="text-[10px] font-black px-2 py-0.5 border-[1.5px] border-black"
-                      style={{ color: getColor(r.score), backgroundColor: getBg(r.score) }}>
-                      {r.score}%
+                      style={{ color: getColor(getScore(rs?.[r.key])), backgroundColor: getBg(getScore(rs?.[r.key])) }}>
+                      {getScore(rs?.[r.key])}%
                     </span>
                   </div>
                 ))}
@@ -444,10 +457,10 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <ArcGauge label="Cardiac" score={getScore(rs?.cardiac)} color={getColor(getScore(rs?.cardiac))} bg={getBg(getScore(rs?.cardiac))} status={getStatus(getScore(rs?.cardiac))} />
-                <ArcGauge label="Diabetes" score={getScore(rs?.diabetes)} color={getColor(getScore(rs?.diabetes))} bg={getBg(getScore(rs?.diabetes))} status={getStatus(getScore(rs?.diabetes))} />
-                <ArcGauge label="Hypertension" score={getScore(rs?.hypertension)} color={getColor(getScore(rs?.hypertension))} bg={getBg(getScore(rs?.hypertension))} status={getStatus(getScore(rs?.hypertension))} />
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                {riskKeys.map(r => (
+                  <ArcGauge key={r.key} label={r.label} score={getScore(rs?.[r.key])} color={getColor(getScore(rs?.[r.key]))} bg={getBg(getScore(rs?.[r.key]))} status={getStatus(getScore(rs?.[r.key]))} />
+                ))}
               </div>
 
               <div className="border-[3px] border-black bg-white shadow-[6px_6px_0px_#000]">
@@ -571,12 +584,12 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="p-6 border-[4px] border-black bg-[#F7EDD0]">
-              <h2 className="text-[18px] font-black uppercase mb-4 border-b-[2px] border-black pb-2">Risk Stratification</h2>
+              <h2 className="text-[18px] font-black uppercase mb-4 border-b-[2px] border-black pb-2">{p.mode === 'athlete' ? 'Performance Stress' : 'Risk Stratification'}</h2>
               <div className="space-y-3">
-                {['cardiac', 'diabetes', 'hypertension'].map(k => (
-                  <div key={k} className="flex justify-between items-center">
-                    <span className="font-black opacity-40 uppercase text-[10px]">{k}</span>
-                    <span className="font-black text-[20px]" style={{ color: getColor(getScore(rs?.[k])) }}>{getScore(rs?.[k])}%</span>
+                {riskKeys.map(r => (
+                  <div key={r.key} className="flex justify-between items-center">
+                    <span className="font-black opacity-40 uppercase text-[10px]">{r.label}</span>
+                    <span className="font-black text-[20px]" style={{ color: getColor(getScore(rs?.[r.key])) }}>{getScore(rs?.[r.key])}%</span>
                   </div>
                 ))}
               </div>

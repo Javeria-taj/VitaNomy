@@ -284,7 +284,7 @@ export default function RegisterPage() {
 
               {step >= 2 && step < 4 && (
                 <motion.div key="s-form" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="w-full">
-                   <PatientForm mode={mode || 'patient'} />
+                   <PatientForm mode={mode === 'athlete' ? 'athlete' : 'patient'} />
                 </motion.div>
               )}
 

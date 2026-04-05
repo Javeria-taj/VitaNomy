@@ -134,7 +134,7 @@ export function Topbar() {
               </>
             ) : (
               <Link 
-                href="/account"
+                href="/register"
                 onClick={() => setShowDropdown(false)}
                 className="flex items-center gap-3 p-4 hover:bg-beige transition-colors"
               >

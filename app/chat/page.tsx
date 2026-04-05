@@ -73,12 +73,11 @@ const renderFormattedText = (text: string, p: any, bmi: string) => {
 const getScore = (val: any): number => typeof val === 'number' ? val : (val?.score ?? 0);
 
 export default function ChatPage() {
-  const { patient, analysis, chatHistory, addChatMessage, setLoading, loadingChat } = usePatientStore()
+  const { patient: p, analysis, chatHistory, addChatMessage, setLoading, loadingChat } = usePatientStore()
   const { t } = useTranslation()
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const p = patient
   const bmi = p ? (p.weight / ((p.height / 100) ** 2)).toFixed(1) : '0'
 
   const combinedChat: ChatMessage[] = chatHistory.length > 0 ? chatHistory : (p ? [
@@ -138,7 +137,7 @@ export default function ChatPage() {
     }
   }
 
-  if (!patient || !analysis) {
+  if (!p || !analysis) {
     return (
       <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: C.beige, color: C.black, fontFamily: "'Inter', sans-serif" }}>
         <Topbar />
@@ -158,68 +157,6 @@ export default function ChatPage() {
         </div>
       </div>
     )
-  }
-
-  const p = patient
-  const bmi = (p.weight / ((p.height / 100) ** 2)).toFixed(1)
-
-  const combinedChat: ChatMessage[] = chatHistory.length > 0 ? chatHistory : [
-    {
-      role: 'assistant',
-      content: `Hello, ${p.name?.split(' ')[0] || 'Patient'}. I've localized your clinical twin. Your **glucose of ${p.glucose} mg/dL** and **BP of ${p.systolic_bp}/${p.diastolic_bp}** are our primary focus. How can I help you optimize these today?`,
-      qr: ['Why is my glucose elevated?', 'How to lower my BP?', 'Run a risk simulation'],
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  ]
-
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-  }, [combinedChat])
-
-  const handleSend = async () => {
-    if (!input.trim() || loadingChat) return
-    const userMsg = input.trim()
-
-    const userChatMessage: ChatMessage = {
-      role: 'user',
-      content: userMsg,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-    addChatMessage(userChatMessage)
-    setInput('')
-
-    setLoading('chat', true)
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patient: p,
-          analysis: analysis,
-          message: userMsg,
-          history: chatHistory
-        })
-      })
-
-      if (!res.ok) {
-        throw new Error('Dr. Vita is currently unavailable. Please try again.')
-      }
-
-      const data = await res.json()
-      addChatMessage({
-        role: 'assistant',
-        content: data.reply,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      })
-    } catch (err: any) {
-      addChatMessage({
-        role: 'assistant',
-        content: `⚠ Error: ${err.message || 'Connection lost.'}`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      })
-    } finally {
-      setLoading('chat', false)
-    }
   }
 
   return (

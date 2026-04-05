@@ -7,22 +7,23 @@ import { usePatientStore } from '@/store/patientStore'
 import { useTranslation } from '@/hooks/useTranslation'
 import { Topbar } from '@/components/Layout/Topbar'
 import { TypoAvatar } from '@/components/Common/TypoAvatar'
+import { AnyPatientInput } from '@/types/patient'
 import { Download } from 'lucide-react'
 
 // ─── Clinical Neobrutalist Color Tokens ───────────────────────────────────────
 const C = {
-  beige:     '#F8F5EE',
-  beige2:    '#F0EBE0',
-  white:     '#FFFFFF',
-  green:     '#1B5E3B',
-  green2:    '#0D3D26',
-  gold:      '#C9A84C',
-  goldPale:  '#F7EDD0',
-  black:     '#0A0F0D',
-  ink:       '#1A2520',
-  mu:        '#5C7268',
-  red:       '#C0392B',
-  redPale:   '#FDE8E8',
+  beige: '#F8F5EE',
+  beige2: '#F0EBE0',
+  white: '#FFFFFF',
+  green: '#1B5E3B',
+  green2: '#0D3D26',
+  gold: '#C9A84C',
+  goldPale: '#F7EDD0',
+  black: '#0A0F0D',
+  ink: '#1A2520',
+  mu: '#5C7268',
+  red: '#C0392B',
+  redPale: '#FDE8E8',
 }
 
 // ─── Brutalist Toggle ─────────────────────────────────────────────────────────
@@ -35,7 +36,7 @@ function BToggle({ label, sub, checked, onChange }: { label: string; sub?: strin
       </div>
       <div className="w-8 h-8 border-[3px] border-black flex items-center justify-center transition-all"
         style={{ backgroundColor: checked ? C.green : C.white, boxShadow: checked ? '2px 2px 0px #000' : 'inset 2px 2px 0px rgba(0,0,0,0.1)' }}>
-        {checked && <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+        {checked && <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13L9 17L19 7" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg>}
       </div>
     </div>
   )
@@ -69,7 +70,7 @@ function PanelHeader({ title, sub, action, onClick }: { title: string; sub: stri
         <p className="text-[11px] font-bold tracking-widest uppercase mt-1" style={{ color: C.mu }}>{sub}</p>
       </div>
       {action && (
-        <button 
+        <button
           onClick={onClick}
           className="px-5 py-2.5 border-[3px] border-black font-black uppercase text-[11px] transition-all hover:translate-x-0.5 hover:translate-y-0.5"
           style={{
@@ -92,8 +93,8 @@ function InputField({ label, value, onChange, type = 'text', hint }: { label: st
       <input type={type} value={value} onChange={e => onChange(e.target.value)}
         className="px-4 py-3 border-[3px] border-black text-[14px] font-bold focus:outline-none transition-all"
         style={{ backgroundColor: C.white, boxShadow: '4px 4px 0px #000' }}
-        onFocus={e => {e.target.style.backgroundColor = C.beige; e.target.style.boxShadow = '2px 2px 0px #000'}}
-        onBlur={e => {e.target.style.backgroundColor = C.white; e.target.style.boxShadow = '4px 4px 0px #000'}}
+        onFocus={e => { e.target.style.backgroundColor = C.beige; e.target.style.boxShadow = '2px 2px 0px #000' }}
+        onBlur={e => { e.target.style.backgroundColor = C.white; e.target.style.boxShadow = '4px 4px 0px #000' }}
       />
       {hint && <span className="text-[9px] font-bold mt-1 uppercase tracking-widest" style={{ color: C.mu }}>{hint}</span>}
     </div>
@@ -104,7 +105,7 @@ type TabId = 'profile' | 'metrics' | 'reports' | 'settings' | 'notifications' | 
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function AccountPage() {
-  const { patient, analysis, updatePatient, language, setLanguage } = usePatientStore()
+  const { patient, analysis, setPatient, updatePatient, language, setLanguage } = usePatientStore()
   const { t } = useTranslation()
   const p = patient
   const a = analysis
@@ -113,7 +114,7 @@ export default function AccountPage() {
   const [genderMode, setGenderMode] = useState<'male' | 'female'>('male')
   const [isExtracting, setIsExtracting] = useState(false)
   const [extractStatus, setExtractStatus] = useState<string | null>(null)
-  
+
   // Local form state
   const [formData, setFormData] = useState({
     firstName: p?.name?.split(' ')[0] || '',
@@ -129,50 +130,50 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (p?.gender) {
-        setGenderMode(p.gender as 'male' | 'female')
+      setGenderMode(p.gender as 'male' | 'female')
     }
     if (p) {
-        setFormData({
-            firstName: p.name?.split(' ')[0] || '',
-            lastName: p.name?.split(' ')[1] || '',
-            age: p.age || 25,
-            height: p.height || 175,
-            weight: p.weight || 75
-        })
+      setFormData({
+        firstName: p.name?.split(' ')[0] || '',
+        lastName: p.name?.split(' ')[1] || '',
+        age: p.age || 25,
+        height: p.height || 175,
+        weight: p.weight || 75
+      })
     }
   }, [p])
 
   const handleSave = async () => {
     setIsSaving(true)
     setSaveStatus('Saving...')
-    
+
     try {
-        updatePatient({
-            name: `${formData.firstName} ${formData.lastName}`.trim(),
-            age: Number(formData.age),
-            height: Number(formData.height),
-            weight: Number(formData.weight),
-            gender: genderMode
-        })
-        setSaveStatus('Saved!')
-        setTimeout(() => setSaveStatus(null), 2000)
+      updatePatient({
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        age: Number(formData.age),
+        height: Number(formData.height),
+        weight: Number(formData.weight),
+        gender: genderMode
+      })
+      setSaveStatus('Saved!')
+      setTimeout(() => setSaveStatus(null), 2000)
     } catch (err) {
-        console.error(err)
-        setSaveStatus('Error saving')
+      console.error(err)
+      setSaveStatus('Error saving')
     } finally {
-        setIsSaving(false)
+      setIsSaving(false)
     }
   }
 
   const menuItems: { id: TabId; label: string; icon: string }[] = [
-    { id: 'profile',       label: t.account.title,         icon: '👤' },
-    { id: 'metrics',       label: t.account.metrics,        icon: '📊' },
-    { id: 'reports',       label: t.account.reports,        icon: '📄' },
-    { id: 'settings',      label: t.account.settings,       icon: '⚙️' },
-    { id: 'notifications', label: t.account.notifications,  icon: '🔔' },
-    { id: 'devices',       label: t.account.devices,        icon: '⌚' },
-    { id: 'privacy',       label: t.account.privacy,        icon: '🔒' },
-    { id: 'billing',       label: t.account.billing,        icon: '💳' },
+    { id: 'profile', label: t.account.title, icon: '👤' },
+    { id: 'metrics', label: t.account.metrics, icon: '📊' },
+    { id: 'reports', label: t.account.reports, icon: '📄' },
+    { id: 'settings', label: t.account.settings, icon: '⚙️' },
+    { id: 'notifications', label: t.account.notifications, icon: '🔔' },
+    { id: 'devices', label: t.account.devices, icon: '⌚' },
+    { id: 'privacy', label: t.account.privacy, icon: '🔒' },
+    { id: 'billing', label: t.account.billing, icon: '💳' },
   ]
 
   const handleFileSelect = () => {
@@ -185,7 +186,7 @@ export default function AccountPage() {
 
     setIsExtracting(true)
     setExtractStatus('Reading PDF...')
-    
+
     try {
       const reader = new FileReader()
       reader.onload = async () => {
@@ -202,9 +203,9 @@ export default function AccountPage() {
 
         if (!res.ok) throw new Error('Extraction failed')
         const data = await res.json()
-        updatePatient(data.extracted_fields)
+        setPatient({ ...p, ...data.extracted_fields } as AnyPatientInput)
         setExtractStatus('Success! Twin updated.')
-        
+
         setTimeout(() => {
           setExtractStatus(null)
           setIsExtracting(false)
@@ -234,7 +235,7 @@ export default function AccountPage() {
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-mu">
             Your clinical account and twin telemetry are initialized during the medical intake process. Please complete your profile to unlock account management.
           </p>
-          <Link href="/account" 
+          <Link href="/register"
             className="px-10 py-5 border-[4px] border-black bg-green text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center">
             {t.dashboard.beginIntake} &rarr;
           </Link>
@@ -274,7 +275,7 @@ export default function AccountPage() {
                     style={{ backgroundColor: C.white, color: C.ink }}>📍 Global Presence</span>
                 </div>
                 <div className="text-[11px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>
-                   Twin ID: VN-{Math.floor(1000 + Math.random() * 9000)}-{p.name.charAt(0)} · Member Since 2025
+                  Twin ID: VN-{Math.floor(1000 + Math.random() * 9000)}-{p.name.charAt(0)} · Member Since 2025
                 </div>
               </div>
             </div>
@@ -377,42 +378,42 @@ export default function AccountPage() {
                     </div>
 
                     <div className="flex justify-end">
-                      <button 
+                      <button
                         onClick={handleSave}
                         disabled={isSaving}
                         className="px-10 py-4 border-[4px] border-black font-black uppercase text-[14px] transition-all flex items-center gap-3 relative overflow-hidden"
                         style={{
-                           backgroundColor: saveStatus === 'Saved!' ? C.green : C.gold,
-                           color: saveStatus === 'Saved!' ? C.white : C.ink,
-                           boxShadow: '6px 6px 0px #000',
-                           transform: isSaving ? 'translate(2px, 2px)' : 'none'
+                          backgroundColor: saveStatus === 'Saved!' ? C.green : C.gold,
+                          color: saveStatus === 'Saved!' ? C.white : C.ink,
+                          boxShadow: '6px 6px 0px #000',
+                          transform: isSaving ? 'translate(2px, 2px)' : 'none'
                         }}
                       >
                         {isSaving ? (
-                            <>
-                                <span className="animate-spin text-[18px]">⚡</span>
-                                SAVING...
-                            </>
+                          <>
+                            <span className="animate-spin text-[18px]">⚡</span>
+                            SAVING...
+                          </>
                         ) : saveStatus === 'Saved!' ? (
-                            <>
-                                <span>✓</span>
-                                CHANGES PERSISTED
-                            </>
+                          <>
+                            <span>✓</span>
+                            CHANGES PERSISTED
+                          </>
                         ) : (
-                            <>
-                                <span>💾</span>
-                                SAVE CLINICAL CHANGES
-                            </>
+                          <>
+                            <span>💾</span>
+                            SAVE CLINICAL CHANGES
+                          </>
                         )}
-                        
+
                         {/* Zebra progress overlay for saving state */}
                         {isSaving && (
-                            <motion.div 
-                                className="absolute inset-x-0 bottom-0 h-1 bg-black/20"
-                                initial={{ scaleX: 0 }}
-                                animate={{ scaleX: 1 }}
-                                transition={{ duration: 0.8, ease: "easeInOut" }}
-                            />
+                          <motion.div
+                            className="absolute inset-x-0 bottom-0 h-1 bg-black/20"
+                            initial={{ scaleX: 0 }}
+                            animate={{ scaleX: 1 }}
+                            transition={{ duration: 0.8, ease: "easeInOut" }}
+                          />
                         )}
                       </button>
                     </div>
@@ -465,23 +466,23 @@ export default function AccountPage() {
                       <div className="border-[4px] border-black p-5 flex flex-col shadow-[6px_6px_0px_#000] cursor-pointer"
                         style={{ backgroundColor: C.beige2 }} onClick={handleFileSelect}>
                         <div className="flex items-start gap-4 mb-4">
-                           <div className="w-12 h-12 border-[3px] border-black flex items-center justify-center text-[20px] shadow-[3px_3px_0px_#000]"
-                                style={{ backgroundColor: C.white }}>
-                             {isExtracting ? '⏳' : '📎'}
-                           </div>
-                           <div>
-                              <div className="font-black text-[14px] uppercase leading-tight mb-1" style={{ color: C.ink }}>
-                                 {isExtracting ? extractStatus : 'Upload Medical Record'}
-                              </div>
-                              <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>
-                                 {isExtracting ? 'Mapping to Twin...' : 'Synchronize new lab data'}
-                              </div>
-                           </div>
+                          <div className="w-12 h-12 border-[3px] border-black flex items-center justify-center text-[20px] shadow-[3px_3px_0px_#000]"
+                            style={{ backgroundColor: C.white }}>
+                            {isExtracting ? '⏳' : '📎'}
+                          </div>
+                          <div>
+                            <div className="font-black text-[14px] uppercase leading-tight mb-1" style={{ color: C.ink }}>
+                              {isExtracting ? extractStatus : 'Upload Medical Record'}
+                            </div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>
+                              {isExtracting ? 'Mapping to Twin...' : 'Synchronize new lab data'}
+                            </div>
+                          </div>
                         </div>
                         <div className="mt-auto">
-                            <div className="w-full h-2 border-[2px] border-black bg-white overflow-hidden">
-                                {isExtracting && <motion.div className="h-full bg-gold" animate={{ x: ['-100%', '100%'] }} transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }} />}
-                            </div>
+                          <div className="w-full h-2 border-[2px] border-black bg-white overflow-hidden">
+                            {isExtracting && <motion.div className="h-full bg-gold" animate={{ x: ['-100%', '100%'] }} transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }} />}
+                          </div>
                         </div>
                       </div>
 
@@ -497,8 +498,8 @@ export default function AccountPage() {
                               {r.i}
                             </div>
                             <div>
-                               <div className="font-black text-[14px] uppercase leading-tight mb-1" style={{ color: C.ink }}>{r.t}</div>
-                               <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>{r.d} · PDF Document</div>
+                              <div className="font-black text-[14px] uppercase leading-tight mb-1" style={{ color: C.ink }}>{r.t}</div>
+                              <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>{r.d} · PDF Document</div>
                             </div>
                           </div>
                           <div className="mt-auto flex gap-3">
@@ -556,8 +557,8 @@ export default function AccountPage() {
                         <div className="px-5 py-3 border-b-[3px] border-black bg-beige flex justify-between items-center">
                           <span className="text-[11px] font-black uppercase tracking-wider">{t.account.aiParams}</span>
                         </div>
-                        <BToggle label="Gender-Aware Responses" sub="Calibrate using selected metabolic sex" checked={true} onChange={() => {}} />
-                        <BToggle label="Research Citations" sub="Include medical references" checked={true} onChange={() => {}} />
+                        <BToggle label="Gender-Aware Responses" sub="Calibrate using selected metabolic sex" checked={true} onChange={() => { }} />
+                        <BToggle label="Research Citations" sub="Include medical references" checked={true} onChange={() => { }} />
                       </div>
                     </div>
                   </motion.div>
@@ -622,8 +623,8 @@ export default function AccountPage() {
               </div>
             </div>
             <div className="p-6 border-[4px] border-black bg-[#F7EDD0]">
-               <h2 className="text-[18px] font-black uppercase mb-4 border-b-[2px] border-black pb-2 text-black">Risk Stratification</h2>
-               <div className="space-y-3">
+              <h2 className="text-[18px] font-black uppercase mb-4 border-b-[2px] border-black pb-2 text-black">Risk Stratification</h2>
+              <div className="space-y-3">
                 {['cardiac', 'diabetes', 'hypertension'].map(k => {
                   const score = typeof (a.risk_scores as any)[k] === 'number' ? (a.risk_scores as any)[k] : ((a.risk_scores as any)[k]?.score || 0)
                   return (
