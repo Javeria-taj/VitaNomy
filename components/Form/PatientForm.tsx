@@ -16,17 +16,17 @@ const CARD_ACTIVE_BG = "#113826"
 
 interface PatientFormProps {
   mode: 'patient' | 'athlete'
+  firstName?: string
+  lastName?: string
 }
 
-export function PatientForm({ mode }: PatientFormProps) {
+export function PatientForm({ mode, firstName: initialFirstName = '', lastName: initialLastName = '' }: PatientFormProps) {
   const router = useRouter()
-  const { setPatient, setAnalysis, setLoading, loadingAnalyze, setError, error } = usePatientStore()
+  const { patient, setPatient, setAnalysis, setLoading, loadingAnalyze, setError, error } = usePatientStore()
 
   const [step, setStep] = useState(1)
   
   // State
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
   const [age, setAge] = useState('32')
   const [gender, setGender] = useState<'male' | 'female' | 'other'>('male')
   const [weight, setWeight] = useState('75')
@@ -54,8 +54,16 @@ export function PatientForm({ mode }: PatientFormProps) {
     setLoading('analyze', true)
     setError(null)
 
+    // Strategy: Props first (from current session), then Store (if rehydrated), then Anonymous
+    const storeFirstName = patient?.name?.split(' ')[0] || ''
+    const storeLastName = patient?.name?.split(' ').slice(1).join(' ') || ''
+    
+    const finalFirstName = initialFirstName || storeFirstName || 'Anonymous'
+    const finalLastName = initialLastName || storeLastName || 'User'
+    const name = `${finalFirstName} ${finalLastName}`.trim()
+
     const baseData = {
-      name: `${firstName} ${lastName}`.trim() || 'Anonymous User',
+      name,
       age: Number(age),
       gender,
       weight: Number(weight),
@@ -129,14 +137,24 @@ export function PatientForm({ mode }: PatientFormProps) {
               <h2 className="text-4xl font-black text-black tracking-tight leading-tight">Patient<br />Demographics.</h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-               <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-wider">First Name</label>
-                  <input className={INPUT_BASE} style={{ boxShadow: '3px 3px 0px #000' }} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Rafi" />
-               </div>
-               <div className="flex flex-col gap-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-wider">Last Name</label>
-                  <input className={INPUT_BASE} style={{ boxShadow: '3px 3px 0px #000' }} value={lastName} onChange={e => setLastName(e.target.value)} placeholder="S." />
+            <div className="flex flex-col gap-2 mb-2">
+               <label className="text-[11px] font-black uppercase tracking-wider">Biological Sex</label>
+               <div className="flex gap-2">
+                  {[
+                    { val: 'male', icon: '♂', label: 'Male' },
+                    { val: 'female', icon: '♀', label: 'Female' },
+                    { val: 'other', icon: '⚧', label: 'Other' }
+                  ].map(opt => (
+                    <button 
+                      key={opt.val} 
+                      onClick={() => setGender(opt.val as any)}
+                      className="flex-1 py-3 border-[3px] border-black font-black text-[13px] uppercase transition-all flex items-center justify-center gap-2"
+                      style={gender === opt.val ? { backgroundColor: '#113826', color: 'white', boxShadow: '3px 3px 0px #000' } : { backgroundColor: 'white', color: '#000', boxShadow: '3px 3px 0px #000' }}
+                    >
+                      <span className="text-lg">{opt.icon}</span>
+                      {opt.label}
+                    </button>
+                  ))}
                </div>
             </div>
 

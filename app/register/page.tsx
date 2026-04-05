@@ -136,7 +136,7 @@ export default function RegisterPage() {
   const [showPw, setShowPw] = useState(false)
   const [regLoading, setRegLoading] = useState(false)
   const [regError, setRegError] = useState('')
-  const { isAthlete, setIsAthlete, mode } = usePatientStore()
+  const { isAthlete, setIsAthlete, mode, setPatient } = usePatientStore()
   
   async function handleRegister() {
     setRegLoading(true)
@@ -154,6 +154,23 @@ export default function RegisterPage() {
         return
       }
       await signIn('credentials', { email, password, redirect: false })
+      
+      // Update store immediately so Topbar and Account know the name
+      setPatient({
+        name: `${firstName} ${lastName}`.trim(),
+        age: 32,
+        gender: 'male',
+        weight: 75,
+        height: 175,
+        systolic_bp: 120,
+        diastolic_bp: 80,
+        glucose: 95,
+        mode: isAthlete ? 'athlete' : 'patient',
+        exercise: 'moderate',
+        smoking: false,
+        stress_level: 3
+      } as any)
+
       setStep(2)
     } catch {
       setRegError('Network error. Please try again.')
@@ -284,7 +301,11 @@ export default function RegisterPage() {
 
               {step >= 2 && step < 4 && (
                 <motion.div key="s-form" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} className="w-full">
-                   <PatientForm mode={mode === 'athlete' ? 'athlete' : 'patient'} />
+                   <PatientForm 
+                      mode={mode === 'athlete' ? 'athlete' : 'patient'} 
+                      firstName={firstName}
+                      lastName={lastName}
+                   />
                 </motion.div>
               )}
 
