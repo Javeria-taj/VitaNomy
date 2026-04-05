@@ -1,6 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;700&display=swap');
+@import "tailwindcss";
 
 @theme {
+  /* Next.js Font Variables Mapping */
+  --font-sans: var(--font-geist-sans), 'Space Grotesk', ui-sans-serif, system-ui;
+  --font-mono: var(--font-geist-mono), 'Space Mono', ui-monospace, monospace;
+  --font-display: 'Bebas Neue', 'Impact', sans-serif;
+
+  /* Default Utility Variables */
+  --background: #F4F2E9;
+  --foreground: #0A0F0D;
+
   /* Neo-Brutalism Base Colors */
   --color-cr: #F4F2E9;      /* Off-white paper */
   --color-em: #1B5E3B;      /* Deep Clinical Green */
@@ -15,16 +25,7 @@
   --color-ok: #27AE60;
   --color-warn: #D35400;
 
-  /* Spacing (Standard 4px base) */
-  --spacing-1: 4px; --spacing-2: 8px; --spacing-3: 12px; --spacing-4: 16px;
-  --spacing-6: 24px; --spacing-8: 32px; --spacing-12: 48px; --spacing-16: 64px;
-
-  /* Typography */
-  --font-display: 'Bebas Neue', 'Impact', sans-serif;
-  --font-body: 'Space Grotesk', sans-serif;
-  --font-mono: 'Space Mono', monospace;
-
-  /* Colors */
+  /* Colors (Unified with v3 names for compatibility) */
   --color-green: #1B5E3B;
   --color-darkGreen: #113826;
   --color-gold: #C9A84C;
@@ -32,17 +33,39 @@
   --color-sage: #81b29a;
   --color-crimson: #a32d2d;
 
-  /* Neo-Brutalism Overrides */
+  /* Spacing (Tailwind v4 uses --spacing as a base multiplier) */
+  --spacing: 0.25rem; 
+
+  /* Neo-Brutalism Radius Overrides (Forcing Sharp Corners) */
   --radius-none: 0px;
   --radius-xs: 0px;
+  --radius-sm: 0px;
   --radius-md: 0px;
   --radius-lg: 0px;
   --radius-xl: 0px;
   --radius-2xl: 0px;
-  --radius-full: 0px;
+  --radius-full: 9999px; /* Only for truly circular elements if needed */
+
+  /* Shadows — Hard Offset (Canonical Neo-Brutalism) */
+  --shadow-sm: 2px 2px 0px #000;
+  --shadow-md: 4px 4px 0px #000;
+  --shadow-lg: 8px 8px 0px #000;
+  --shadow-xl: 12px 12px 0px #000;
 }
 
+/* Layer Base for global element styles */
+@layer base {
+  * {
+    @apply border-black;
+  }
+  body {
+    @apply bg-cr text-ink font-sans antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+}
 
+/* Custom Utilities & Animations */
 @keyframes grid-drift {
   from { background-position: 0 0; }
   to { background-position: 48px 48px; }
