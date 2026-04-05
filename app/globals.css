@@ -24,6 +24,14 @@
   --font-body: 'Space Grotesk', sans-serif;
   --font-mono: 'Space Mono', monospace;
 
+  /* Colors */
+  --color-green: #1B5E3B;
+  --color-darkGreen: #113826;
+  --color-gold: #C9A84C;
+  --color-coral: #E07A5F;
+  --color-sage: #81b29a;
+  --color-crimson: #a32d2d;
+
   /* Neo-Brutalism Overrides */
   --radius-none: 0px;
   --radius-xs: 0px;

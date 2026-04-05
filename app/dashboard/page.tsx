@@ -4,6 +4,10 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { usePatientStore } from '@/store/patientStore'
+import { useTranslation } from '@/hooks/useTranslation'
+import { DEMO_PATIENT, MOCK_ANALYSIS } from '@/data/mockData'
+import { AnyPatientInput, AnalyzeResponse, PatientInput } from '@/types/patient'
+import { Loader2, History as HistoryIcon, FileText, Share2, Download, Zap, Heart, ShieldCheck, BrainCircuit, Target, Clock, AlertTriangle } from 'lucide-react'
 import { Topbar } from '@/components/Layout/Topbar'
 
 // ─── Color tokens ─────────────────────────────────────────────────────────────
@@ -24,7 +28,7 @@ function NBadge({ label, color, bg }: { label: string; color: string; bg: string
 }
 
 // ─── Section Header ───────────────────────────────────────────────────────────
-function SectionHeader({ icon, title, badge }: { icon: string; title: string; badge?: React.ReactNode }) {
+function SectionHeader({ icon, title, badge }: { icon: any; title: string; badge?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 mb-3 pb-2 border-b-[1.5px] border-black/10">
       <div className="w-5 h-5 border-[1.5px] border-black flex items-center justify-center text-[10px] shadow-[1px_1px_0px_#000]"
@@ -94,8 +98,8 @@ function BodySVGResults({ cardiac, diabetes, hypertension }: { cardiac: number; 
       <polygon points="120,5 135,12 135,32 120,40 105,32 105,12" fill="white" stroke="black" strokeWidth="2" />
       <rect x="114" y="40" width="12" height="10" fill="white" stroke="black" strokeWidth="1.5" />
       <rect x="95" y="50" width="50" height="65" fill="white" stroke="black" strokeWidth="2" />
-      <rect x="50" y="50" width="20" height="15" fill={cardiac > 60 ? C.danger : C.gold} stroke="black" strokeWidth="1.5" />
-      <rect x="45" y="75" width="30" height="20" fill={diabetes > 60 ? C.danger : C.gold} stroke="black" strokeWidth="1.5" />
+      <circle cx="120" cy="75" r={5 + (cardiac / 20)} fill={C.danger} style={{ opacity: 0.8 + (cardiac / 500) }} />
+      <circle cx="120" cy="125" r={8 + (diabetes / 15)} fill={C.gold} style={{ opacity: 0.8 + (diabetes / 500) }} />
     </svg>
   )
 }
@@ -123,8 +127,9 @@ const getScore = (val: any): number => typeof val === 'number' ? val : (val?.sco
 
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { patient, analysis } = usePatientStore()
-  const [view, setView] = useState<'input' | 'results' | 'history'>('input')
+  const { patient, analysis, setMode } = usePatientStore()
+  const { t } = useTranslation()
+  const [view, setView] = useState<'input' | 'results' | 'history'>('results')
   const [history, setHistory] = useState<any[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
 
@@ -158,13 +163,13 @@ export default function DashboardPage() {
             style={{ backgroundColor: C.goldPale }}>
             🧬
           </div>
-          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4" style={{ color: C.ink }}>No Twin Detected</h1>
+          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4" style={{ color: C.ink }}>{t.dashboard.noTwin}</h1>
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10" style={{ color: C.mu }}>
-            You haven't synchronized your clinical data yet. To generate your digital twin and see real-time health analysis, please complete the medical intake.
+            {t.dashboard.noTwinDesc}
           </p>
-          <Link href="/register" 
-            className="px-10 py-5 border-[4px] border-black bg-green text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-            Complete Medical Intake &rarr;
+          <Link href="/onboarding" 
+            className="px-10 py-5 border-[4px] border-black bg-green text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center">
+            {t.dashboard.beginIntake} &rarr;
           </Link>
         </div>
       </div>
@@ -184,33 +189,34 @@ export default function DashboardPage() {
 
       <Topbar />
 
-      {/* Tab bar */}
-      <div className="px-6 py-4 border-b-[2px] border-black flex items-center gap-4 shrink-0" style={{ backgroundColor: C.beige }}>
-        {(['input', 'results', 'history'] as const).map(v => (
-          <button key={v} onClick={() => setView(v)}
-            className="text-[12px] font-black uppercase tracking-widest pb-1 border-b-[3px] transition-all"
-            style={view === v ? { color: C.green, borderColor: C.green } : { color: C.mu, borderColor: 'transparent' }}>
-            {v === 'input' ? 'Builder' : v === 'results' ? 'Analysis' : 'History'}
-          </button>
-        ))}
+      <div className="px-6 py-4 border-b-[2px] border-black flex items-center justify-between gap-4 bg-beige shrink-0">
+        <div className="flex gap-4">
+          {(['input', 'results', 'history'] as const).map(v => (
+            <button key={v} onClick={() => setView(v)}
+              className="text-[12px] font-black uppercase tracking-widest pb-1 border-b-[3px] transition-all"
+              style={view === v ? { color: C.green, borderColor: C.green } : { color: C.mu, borderColor: 'transparent' }}>
+              {v === 'input' ? t.dashboard.builder : v === 'results' ? t.dashboard.analysis : (t.dashboard.history || 'History')}
+            </button>
+          ))}
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
         {view === 'input' ? (
           <motion.div key="input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="flex-1 grid lg:grid-cols-[280px_1fr_240px] overflow-hidden">
+            className="flex-1 grid lg:grid-cols-[320px_1fr_280px] overflow-hidden">
 
-            {/* Sidebar */}
+            {/* Sidebar Left: Clinical Profile */}
             <div className="p-5 border-r-[2px] border-black bg-white overflow-y-auto">
-              <SectionHeader icon="👤" title="Profile Details" />
+              <SectionHeader icon="👤" title={t.dashboard.profile} />
               <FieldRow label="Legal Name" value={p.name} />
               <div className="grid grid-cols-2 gap-2">
                 <FieldRow label="Age" value={`${p.age} yr`} />
                 <FieldRow label="Gender" value={p.gender} />
               </div>
 
-              <div className="mb-5 border-[2.5px] p-2 -mx-1 mt-4" style={{ borderColor: C.danger, backgroundColor: '#FFF5F5' }}>
-                <SectionHeader icon="❤️" title="Cardiac" badge={<NBadge label="● Active" color={C.danger} bg="#FDE8E8" />} />
+              <div className="mb-6 mt-6">
+                <SectionHeader icon="❤️" title={t.dashboard.cardiac} />
                 <div className="grid grid-cols-2 gap-2">
                   <FieldRow label="BP Systolic" value={p.systolic_bp ? `${p.systolic_bp} sys` : undefined} />
                   <FieldRow label="BP Diastolic" value={p.diastolic_bp ? `${p.diastolic_bp} dia` : undefined} />
@@ -218,9 +224,9 @@ export default function DashboardPage() {
                 <FieldRow label="Total Cholesterol" value={p.cholesterol_total ? `${p.cholesterol_total} mg/dL` : undefined} />
               </div>
 
-              <div className="mb-5">
-                <SectionHeader icon="⏱" title="Metabolic" />
-                <FieldRow label="Fasting Blood Glucose" value={p.glucose ? `${p.glucose} mg/dL` : undefined} />
+              <div className="mb-6">
+                <SectionHeader icon="⏱" title={t.dashboard.metabolic} />
+                <FieldRow label="Glucose" value={`${p.glucose} mg/dL`} />
                 <div className="grid grid-cols-2 gap-2">
                   <FieldRow label="BMI" value={bmi} />
                   <FieldRow label="HbA1c" placeholder="optional" />
@@ -228,18 +234,17 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                <SectionHeader icon="🏃" title="Lifestyle" />
+                <SectionHeader icon="🏃" title={t.dashboard.lifestyle} />
                 <FieldRow label="Physical Activity" value={(p.exercise || 'none').charAt(0).toUpperCase() + (p.exercise || 'none').slice(1)} />
-                <FieldRow label="Smoking Status" value={p.smoking ? 'Smoker' : 'Non-smoker'} />
-                <FieldRow label="Family History" value={p.family_history ? 'Yes — known conditions' : 'None known'} />
+                <FieldRow label="Smoking" value={p.smoking ? 'Smoker' : 'Non-smoker'} />
               </div>
             </div>
 
-            {/* Center body model */}
-            <div className="flex flex-col items-center p-4 border-r-[2px] border-black" style={{ backgroundColor: C.green2 }}>
-              <div className="w-full max-w-sm border-[2px] border-yellow-400/40 px-4 py-2 text-center text-[11px] font-bold mb-4"
-                style={{ backgroundColor: 'rgba(201,168,76,0.12)', color: C.gold }}>
-                ◈ Digital Twin live biometric projection
+            {/* Center: Digital Twin Projection */}
+            <div className="flex flex-col items-center p-4 border-r-[2px] border-black bg-[#113826]">
+              <div className="w-full max-w-sm border-[2px] border-yellow-400/40 px-4 py-2 text-center text-[11px] font-black mb-4 text-[#C9A84C]"
+                style={{ backgroundColor: 'rgba(201,168,76,0.12)' }}>
+                ◈ LIVE BIOMETRIC PROJECTION
               </div>
               <div className="flex-1 flex items-center justify-center w-full">
                 <BodySVGInput age={p.age || 0} systolic={Number(p.systolic_bp) || 0}
@@ -248,175 +253,133 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Column 3: Status Tracking */}
-            <div className="p-5 overflow-y-auto bg-white">
-              <SectionHeader icon="⚡" title="Status" />
-              <div className="p-4 border-[2px] border-black shadow-[3px_3px_0px_#000]" style={{ backgroundColor: C.goldPale }}>
-                <div className="text-[12px] font-black">TWIN READY</div>
-                <div className="text-[10px] mt-1">Metabolic sync verified</div>
+            {/* Sidebar Right: Telemetry Status */}
+            <div className="p-5 overflow-y-auto bg-white border-l-[2px] border-black">
+              <SectionHeader icon="⚡" title="Telemetry Status" />
+              <div className="p-4 border-[2px] border-black shadow-[3px_3px_0px_#000] bg-[#F7EDD0]">
+                <div className="text-[12px] font-black uppercase">Twin Synchronized</div>
+                <div className="text-[10px] mt-1 font-bold text-black/50">All clinical fields verified</div>
               </div>
             </div>
           </motion.div>
 
         ) : view === 'results' ? (
           <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="flex-1 grid" style={{ gridTemplateColumns: '270px 1fr' }}>
+            className="flex-1 grid lg:grid-cols-[300px_1fr] overflow-hidden">
 
-            {/* Left risk map */}
-            <div className="border-r-[2px] border-black p-4 flex flex-col items-center" style={{ backgroundColor: C.beige }}>
-              <div className="flex justify-between items-center w-full mb-3">
-                <span className="text-[12px] font-black" style={{ color: C.tx }}>Risk Map</span>
-                <span className="text-[10px] px-2 py-0.5 border-[1.5px] border-black"
-                  style={{ backgroundColor: C.beige2, color: C.mu }}>
-                  {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {/* Left Column: Risk Map */}
+            <div className="border-r-[2px] border-black p-5 flex flex-col items-center bg-[#F8F5EE]">
+              <div className="flex justify-between items-center w-full mb-4">
+                <span className="text-[12px] font-black uppercase tracking-widest">{t.dashboard.riskMap}</span>
+                <span className="text-[10px] px-2 py-0.5 border-[1.5px] border-black bg-[#EDE7D8] font-black">
+                  {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                 </span>
               </div>
               <BodySVGResults cardiac={getScore(rs.cardiac)} diabetes={getScore(rs.diabetes)} hypertension={getScore(rs.hypertension)} />
               
-              {/* Added: Real-time Threat Monitor Widget */}
-              <div className="w-full mt-4 p-3 border-[2.5px] border-black bg-white shadow-[3px_3px_0px_#000]">
-                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: C.mu }}>Live Telemetry</span>
-                    <div className="flex items-center gap-1.5">
-                       <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                       <span className="text-[9px] font-black uppercase">Active</span>
-                    </div>
-                 </div>
-                 <div className="text-[13px] font-black leading-tight text-red-600">
-                    Slight Cardiac Drift detected. Check hydration.
-                 </div>
-              </div>
-
-              <div className="w-full flex flex-col gap-1.5 mt-3">
+              <div className="w-full flex flex-col gap-2 mt-6">
                 {[
                   { label: 'Cardiac', score: getScore(rs.cardiac) },
                   { label: 'Diabetes', score: getScore(rs.diabetes) },
                   { label: 'Hypertension', score: getScore(rs.hypertension) },
                 ].map(r => (
-                  <div key={r.label} className="flex items-center gap-2 px-3 py-2 border-[2px] border-black bg-white shadow-[2px_2px_0px_#000]">
-                    <div className="w-3 h-3 flex-shrink-0" style={{ backgroundColor: getColor(r.score) }} />
-                    <span className="text-[11px] font-black flex-1">{r.label}</span>
+                  <div key={r.label} className="flex items-center gap-2 p-3 border-[2px] border-black bg-white shadow-[2px_2px_0px_#000]">
+                    <div className="w-3 h-3 shrink-0" style={{ backgroundColor: getColor(r.score) }} />
+                    <span className="text-[11px] font-black flex-1 uppercase">{r.label}</span>
                     <span className="text-[10px] font-black px-2 py-0.5 border-[1.5px] border-black"
                       style={{ color: getColor(r.score), backgroundColor: getBg(r.score) }}>
-                      {r.score}% {getStatus(r.score).split(' ')[0]}
+                      {r.score}%
                     </span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Right analysis */}
-            <div className="p-5 flex flex-col gap-4 overflow-y-auto" style={{ backgroundColor: C.beige2 }}>
-              {/* Patient card */}
-              <div className="flex items-center gap-3 p-3 border-[2.5px] border-black bg-white shadow-[3px_3px_0px_#000]">
-                <div className="w-10 h-10 flex items-center justify-center text-white font-black"
-                  style={{ backgroundColor: C.green }}>{initials}</div>
-                <div>
-                  <div className="font-black">{p.name}</div>
-                  <div className="text-[11px] font-bold opacity-60">Age {p.age} · BMI {bmi} · {p.smoking ? 'Smoker' : 'Non-smoker'}</div>
+            {/* Right Column: Detailed Analysis */}
+            <div className="p-8 flex flex-col gap-6 overflow-y-auto bg-white">
+              <div className="flex items-center gap-4 p-4 border-[3px] border-black shadow-[4px_4px_0px_#000] bg-[#F8F5EE]">
+                <div className="w-12 h-12 flex items-center justify-center text-white font-black text-lg bg-[#1B5E3B] border-[2px] border-black">{initials}</div>
+                <div className="flex-1">
+                  <div className="font-black text-xl uppercase tracking-tighter">{p.name}</div>
+                  <div className="text-[11px] font-bold text-black/50 uppercase">Clinical Intelligence Twin · Profile V1.4</div>
                 </div>
-                <div className="ml-auto flex items-center gap-2">
-                  <span className="text-[10px] font-black px-2 py-1 border-[2px] border-black"
-                    style={p.gender === 'female'
-                      ? { backgroundColor: '#FDE8E8', color: '#C2185B', borderColor: '#F8BBD0' }
-                      : { backgroundColor: '#E8F0FE', color: '#1565C0', borderColor: '#BBDEFB' }}>
-                    {p.gender === 'female' ? '♀ Female' : p.gender === 'male' ? '♂ Male' : '⚧ Other'}
-                  </span>
-                  <span className="text-[10px] font-black px-2 py-1 border-[2px] border-black"
-                    style={{ color: getColor(getScore(rs.cardiac)), backgroundColor: getBg(getScore(rs.cardiac)) }}>
-                    {(a.overall_risk ?? rs.overall_risk ?? 'HIGH')} RISK
-                  </span>
+                <div className="flex items-center gap-2">
+                    <NBadge label={p.gender || 'Unknown'} color="#000" bg="#FFF" />
+                    <NBadge label={(a.overall_risk ?? 'MODERATE') + " RISK"} color="#FFF" bg={getColor(getScore(rs.cardiac))} />
                 </div>
               </div>
 
-              {/* Gauges */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-4">
                 <ArcGauge label="Cardiac" score={getScore(rs.cardiac)} color={getColor(getScore(rs.cardiac))} bg={getBg(getScore(rs.cardiac))} status={getStatus(getScore(rs.cardiac))} />
                 <ArcGauge label="Diabetes" score={getScore(rs.diabetes)} color={getColor(getScore(rs.diabetes))} bg={getBg(getScore(rs.diabetes))} status={getStatus(getScore(rs.diabetes))} />
                 <ArcGauge label="Hypertension" score={getScore(rs.hypertension)} color={getColor(getScore(rs.hypertension))} bg={getBg(getScore(rs.hypertension))} status={getStatus(getScore(rs.hypertension))} />
               </div>
 
-              {/* AI Insights */}
-              <div className="border-[2.5px] border-black bg-white shadow-[3px_3px_0px_#000]">
-                <div className="flex items-center gap-2 px-4 py-3 border-b-[2px] border-black">
-                  <div className="w-7 h-7 border-[1.5px] border-black flex items-center justify-center" style={{ backgroundColor: C.goldPale }}>
-                    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                      <path d="M7 1L9 5.5H13.5L9.8 8.2L11.3 13L7 10.3L2.7 13L4.2 8.2L0.5 5.5H5Z" fill={C.gold} stroke={C.gold} strokeWidth="0.5" />
-                    </svg>
-                  </div>
-                  <span className="text-[13px] font-black flex-1" style={{ color: C.tx }}>
-                    AI Insights — {(p.gender || 'Patient').charAt(0).toUpperCase() + (p.gender || 'patient').slice(1)} Profile
-                  </span>
-                  <span className="text-[10px] font-black px-2 py-0.5 border-[1.5px] border-black"
-                    style={{ backgroundColor: C.greenPale, color: C.green }}>
-                    {a.insights.length} findings
-                  </span>
+              <div className="border-[3px] border-black bg-white shadow-[6px_6px_0px_#000]">
+                <div className="flex items-center gap-3 p-4 border-b-[2px] border-black bg-[#F7EDD0]">
+                  <Zap className="w-5 h-5 text-[#C9A84C]" fill="#C9A84C" />
+                  <span className="text-[14px] font-black uppercase tracking-tight">AI Twin Intelligence Findings</span>
                 </div>
-
-                <div className="p-4">
-                  <div className="text-[12px] font-black border-b-[1px] border-black/10 pb-2 mb-3 tracking-wider">✦ AI TWIN INSIGHTS</div>
-                  <div className="space-y-4">
-                    {a.insights.map((ins, i) => (
-                      <div key={i} className="flex gap-3">
-                        <div className="w-2 h-2 mt-1.5 shrink-0" style={{ backgroundColor: C.green }} />
-                        <p className="text-[12px] leading-relaxed font-bold">{ins}</p>
-                      </div>
-                    ))}
-                  </div>
+                <div className="p-6 space-y-4">
+                  {a.insights.map((ins, i) => (
+                    <div key={i} className="flex gap-4 p-4 border-[2px] border-black/10 hover:border-black transition-colors">
+                      <div className="w-2 h-2 mt-1.5 shrink-0 bg-[#1B5E3B]" />
+                      <p className="text-[13px] leading-relaxed font-bold italic text-black/80">{ins}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </motion.div>
         ) : (
           <motion.div key="history" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-            className="flex-1 p-8 overflow-y-auto" style={{ backgroundColor: C.beige }}>
+            className="flex-1 p-8 overflow-y-auto bg-[#F8F5EE]">
              <div className="max-w-4xl mx-auto">
                 <div className="flex items-end justify-between mb-8 border-b-[4px] border-black pb-4">
                    <div>
-                      <h2 className="text-[32px] font-black uppercase tracking-tighter" style={{ color: C.ink }}>Clinical History</h2>
-                      <p className="text-[12px] font-black uppercase tracking-widest opacity-40">Longitudinal Twin Telemetry</p>
+                      <h2 className="text-[32px] font-black uppercase tracking-tighter">Clinical History</h2>
+                      <p className="text-[12px] font-black uppercase tracking-widest opacity-40">Temporal Twin Telemetry Log</p>
                    </div>
-                   <div className="text-[11px] font-black px-3 py-1 border-[2px] border-black bg-white">
-                      {history.length} Sessions Found
+                   <div className="text-[11px] font-black px-3 py-1 border-[2px] border-black bg-white shadow-[2px_2px_0px_#000]">
+                      {history.length} Sessions Synchronized
                    </div>
                 </div>
 
                 {loadingHistory ? (
-                   <div className="py-20 text-center font-black uppercase tracking-widest animate-pulse">Retrieving encrypted sessions...</div>
+                   <div className="py-20 text-center font-black uppercase tracking-widest animate-pulse">Retrieving encrypted clinical records...</div>
                 ) : history.length === 0 ? (
                    <div className="py-20 text-center border-[4px] border-dashed border-black/10">
                       <div className="text-[40px] mb-4">🗂</div>
-                      <div className="font-black uppercase tracking-wider text-black/20">No archived sessions yet</div>
+                      <div className="font-black uppercase tracking-wider text-black/20">No archived clinical sessions found</div>
                    </div>
                 ) : (
-                   <div className="space-y-6">
+                   <div className="grid gap-6">
                       {history.map((sess, i) => (
-                         <div key={sess.id} className="border-[4px] border-black bg-white p-6 shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-                            <div className="flex justify-between items-start mb-4">
+                         <div key={sess.id} className="border-[3px] border-black bg-white p-6 shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+                            <div className="flex justify-between items-start mb-6">
                                <div>
-                                  <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-1" style={{ color: C.mu }}>
-                                     {new Date(sess.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                  <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-1 text-black/40">
+                                     {new Date(sess.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
                                   </div>
-                                  <div className="text-[18px] font-black uppercase tracking-tight">{sess.mode || 'ANALYSIS'} SYNC</div>
+                                  <div className="text-[20px] font-black uppercase tracking-tight">{sess.mode || 'CLINICAL'} TELEMETRY SYNC</div>
                                 </div>
-                                <div className="px-3 py-1 border-[2.5px] border-black text-[12px] font-black uppercase" 
-                                  style={{ backgroundColor: getColor(getScore(sess.risk_scores?.cardiac || 0)), color: 'white' }}>
+                                <div className="px-4 py-2 border-[2.5px] border-black text-[12px] font-black uppercase bg-[#1B5E3B] text-white shadow-[3px_3px_0px_#000]">
                                   {sess.overall_risk || 'MODERATE'} RISK
                                 </div>
                             </div>
                             <div className="grid grid-cols-4 gap-4">
                                {['cardiac', 'diabetes', 'hypertension'].map(k => (
-                                  <div key={k} className="border-[2px] border-black p-3 bg-beige">
-                                     <div className="text-[9px] font-black uppercase opacity-40 mb-1">{k}</div>
-                                     <div className="text-[20px] font-black" style={{ color: getColor(getScore(sess.risk_scores?.[k] || 0)) }}>
-                                        {getScore(sess.risk_scores?.[k] || 0)}%
+                                  <div key={k} className="border-[2px] border-black p-4 bg-[#F8F5EE]">
+                                     <div className="text-[9px] font-black uppercase opacity-40 mb-1 tracking-wider">{k}</div>
+                                     <div className="text-[24px] font-black" style={{ color: getColor(getScore(sess.risk_scores?.[k] || 0)) }}>
+                                        {getScore(sess.risk_scores?.[k] || 0)}<span className="text-xs ml-0.5">%</span>
                                      </div>
                                   </div>
-                               ))}
-                               <div className="border-[2px] border-black p-3" style={{ backgroundColor: C.goldPale }}>
-                                  <div className="text-[9px] font-black uppercase opacity-40 mb-1">Completeness</div>
-                                  <div className="text-[20px] font-black">{(sess.data_completeness * 100).toFixed(0)}%</div>
-                               </div>
+                                ))}
+                                <div className="border-[2px] border-black p-4 bg-[#F7EDD0]">
+                                   <div className="text-[9px] font-black uppercase opacity-40 mb-1 tracking-wider">Sync State</div>
+                                   <div className="text-[24px] font-black">{(sess.data_completeness * 100).toFixed(0)}<span className="text-xs ml-0.5">%</span></div>
+                                </div>
                             </div>
                          </div>
                       ))}
@@ -427,14 +390,20 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
-      {/* Footer bar */}
-      <div className="flex items-center justify-between px-5 py-3 border-t-[2px] border-black shrink-0"
-        style={{ backgroundColor: C.beige2 }}>
+      {/* Persistent Interaction Footer */}
+      <div className="flex items-center justify-between px-6 py-4 border-t-[3px] border-black bg-[#EDE7D8] shrink-0">
         <button onClick={() => setView(view === 'results' ? 'history' : view === 'history' ? 'input' : 'results')}
-          className="px-4 py-2 border-[2px] border-black font-black text-[11px] hover:bg-black hover:text-white transition-all">
-          {view === 'results' ? 'VIEW HISTORY →' : view === 'history' ? '← BACK TO BUILDER' : 'ANALYSIS DASHBOARD →'}
+          className="px-6 py-3 border-[3px] border-black bg-black text-white font-black text-[12px] uppercase tracking-widest shadow-[4px_4px_0px_#C9A84C] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
+          {view === 'results' ? 'Access Longitudinal History →' : view === 'history' ? '← Review Intake Profile' : 'Launch Analysis Dashboard →'}
         </button>
-        <span className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em]">Clinical Digital Twin Edition</span>
+        <div className="flex items-center gap-6">
+            <span className="text-[10px] font-black opacity-30 uppercase tracking-[0.3em]">VitaTwin Clinical Edition V1.4</span>
+            <div className="h-4 w-[2px] bg-black/10" />
+            <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#27AE60]" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#27AE60]">Status: Live</span>
+            </div>
+        </div>
       </div>
     </div>
   )

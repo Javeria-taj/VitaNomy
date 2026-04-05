@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { usePatientStore } from '@/store/patientStore'
+import { useTranslation } from '@/hooks/useTranslation'
 import { TypoAvatar } from '@/components/Common/TypoAvatar'
 
 const C = {
@@ -18,15 +19,16 @@ const C = {
 export function Topbar() {
   const pathname = usePathname()
   const { patient } = usePatientStore()
+  const { t } = useTranslation()
   
   const name = patient?.name || ''
   const isGuest = !patient
 
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard' },
-    { name: 'Simulator', path: '/simulator' },
-    { name: 'Chat AI', path: '/chat' },
-    { name: 'Account', path: '/account' },
+    { name: t.nav.dashboard, path: '/dashboard' },
+    { name: t.nav.simulator, path: '/simulator' },
+    { name: t.nav.chat, path: '/chat' },
+    { name: t.nav.account, path: '/account' },
   ]
 
   return (
@@ -50,7 +52,7 @@ export function Topbar() {
           const isActive = pathname === item.path
           return (
             <Link 
-              key={item.name} 
+              key={item.path}
               href={item.path}
               className="px-5 py-2 text-[13px] font-black border-[3px] transition-all uppercase tracking-wider"
               style={isActive
@@ -66,7 +68,7 @@ export function Topbar() {
       <Link href="/onboarding" className="flex items-center gap-3 px-4 py-2 border-[3px] border-black bg-white shadow-[3px_3px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#000] transition-all cursor-pointer">
         <TypoAvatar name={isGuest ? '?' : name} />
         <span className="text-[14px] font-black uppercase tracking-tight" style={{ color: C.black }}>
-          {isGuest ? 'Initialize Twin' : name}
+          {isGuest ? t.nav.initTwin : name}
         </span>
       </Link>
     </nav>

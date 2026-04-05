@@ -50,6 +50,10 @@ interface PatientStore {
 
   // reset
   reset: () => void
+
+  // language
+  language: 'en' | 'hi' | 'ta' | 'te'
+  setLanguage: (l: 'en' | 'hi' | 'ta' | 'te') => void
 }
 
 export const usePatientStore = create<PatientStore>()(
@@ -70,6 +74,7 @@ export const usePatientStore = create<PatientStore>()(
       loadingSimulate: false,
       loadingChat: false,
       error: null,
+      language: 'en',
 
       setMode: (mode) => set({ mode }),
       setIsAthlete: (isAthlete) => set({ isAthlete, mode: isAthlete ? 'athlete' : 'patient' }),
@@ -87,6 +92,7 @@ export const usePatientStore = create<PatientStore>()(
         return s
       }),
       setError: (error) => set({ error }),
+      setLanguage: (language) => set({ language }),
       reset: () => set({
         mode: null,
         isAthlete: false,
@@ -99,7 +105,8 @@ export const usePatientStore = create<PatientStore>()(
         loadingAnalyze: false,
         loadingSimulate: false,
         loadingChat: false,
-        error: null
+        error: null,
+        language: 'en'
       })
     }),
     {
