@@ -24,6 +24,7 @@ export interface PatientInput {
   family_history?: boolean
   existing_conditions?: string[]
   current_medications?: string[]
+  stress_level?: number
 }
 
 // ─── ATHLETE MODE INPUT ──────────────────────────────────

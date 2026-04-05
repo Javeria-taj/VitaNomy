@@ -48,6 +48,7 @@ export function PatientForm({ mode }: PatientFormProps) {
   // Lifestyle
   const [activity, setActivity] = useState('Moderate')
   const [smoking, setSmoking] = useState(false)
+  const [stressLevel, setStressLevel] = useState('3')
   
   const handleComplete = async () => {
     setLoading('analyze', true)
@@ -65,6 +66,7 @@ export function PatientForm({ mode }: PatientFormProps) {
       cholesterol_total: Number(cholesterol),
       exercise: activity.toLowerCase() as any,
       smoking,
+      stress_level: Number(stressLevel),
     }
 
     let finalData: PatientInput | AthleteInput;
@@ -263,6 +265,14 @@ export function PatientForm({ mode }: PatientFormProps) {
             <div className="flex items-center gap-3 p-4 border-[3px] border-black bg-white shadow-[4px_4px_0px_#000]">
                <input type="checkbox" checked={smoking} onChange={() => setSmoking(!smoking)} className="w-5 h-5 border-[3px] border-black cursor-pointer" />
                <span className="text-[13px] font-black uppercase">Active Smoker</span>
+            </div>
+
+            <div className="flex flex-col gap-2 p-4 border-[3px] border-black bg-white shadow-[4px_4px_0px_#000]">
+               <div className="flex justify-between items-center">
+                  <label className="text-[11px] font-black uppercase tracking-wider">Baseline Stress Level</label>
+                  <span className="text-[12px] font-black px-2 py-0.5 border-[2px] border-black bg-[#C9A84C]">{stressLevel}/10</span>
+               </div>
+               <input type="range" min="1" max="10" value={stressLevel} onChange={e => setStressLevel(e.target.value)} className="w-full h-2 bg-black/10 rounded-lg appearance-none cursor-pointer accent-black" />
             </div>
 
             <div className="flex gap-3">

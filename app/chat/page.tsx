@@ -91,7 +91,7 @@ export default function ChatPage() {
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-mu">
             {t.chat.lockedDesc}
           </p>
-          <Link href="/onboarding" 
+          <Link href="/chat" 
             className="px-10 py-5 border-[4px] border-black bg-darkGreen text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center">
             {t.chat.initTwin} &rarr;
           </Link>
@@ -147,7 +147,8 @@ export default function ChatPage() {
 
       const data = await res.json()
       addChatMessage({
-        ...data.message,
+        role: 'assistant',
+        content: data.reply,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       })
     } catch (err: any) {

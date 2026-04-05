@@ -19,6 +19,7 @@ interface PatientStore {
   // patient data
   patient: AnyPatientInput | null
   setPatient: (p: AnyPatientInput) => void
+  updatePatient: (updates: Partial<AnyPatientInput>) => void
 
   // extract state
   extractResult: ExtractResponse | null
@@ -79,6 +80,9 @@ export const usePatientStore = create<PatientStore>()(
       setMode: (mode) => set({ mode }),
       setIsAthlete: (isAthlete) => set({ isAthlete, mode: isAthlete ? 'athlete' : 'patient' }),
       setPatient: (patient) => set({ patient }),
+      updatePatient: (updates) => set((s) => ({
+        patient: s.patient ? { ...s.patient, ...updates } as AnyPatientInput : null
+      })),
       setExtractResult: (extractResult) => set({ extractResult }),
       setAnalysis: (analysis) => set({ analysis }),
       setSimulation: (simulation) => set({ simulation }),

@@ -84,11 +84,11 @@ function PanelHeader({ title, sub, action, onClick }: { title: string; sub: stri
 }
 
 // ─── Input Field ──────────────────────────────────────────────────────────────
-function InputField({ label, val, type = 'text', hint }: { label: string; val: string; type?: string; hint?: string }) {
+function InputField({ label, value, onChange, type = 'text', hint }: { label: string; value: string; onChange: (v: string) => void; type?: string; hint?: string }) {
   return (
     <div className="flex flex-col">
       <label className="text-[11px] font-black uppercase mb-1.5" style={{ color: C.ink }}>{label}</label>
-      <input type={type} defaultValue={val}
+      <input type={type} value={value} onChange={e => onChange(e.target.value)}
         className="px-4 py-3 border-[3px] border-black text-[14px] font-bold focus:outline-none transition-all"
         style={{ backgroundColor: C.white, boxShadow: '4px 4px 0px #000' }}
         onFocus={e => {e.target.style.backgroundColor = C.beige; e.target.style.boxShadow = '2px 2px 0px #000'}}
@@ -112,6 +112,17 @@ export default function AccountPage() {
   const [genderMode, setGenderMode] = useState<'male' | 'female'>('male')
   const [isExtracting, setIsExtracting] = useState(false)
   const [extractStatus, setExtractStatus] = useState<string | null>(null)
+  
+  // Local form state
+  const [formData, setFormData] = useState({
+    firstName: p?.name?.split(' ')[0] || '',
+    lastName: p?.name?.split(' ')[1] || '',
+    age: p?.age || 25,
+    height: p?.height || 175,
+    weight: p?.weight || 75
+  })
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -119,7 +130,38 @@ export default function AccountPage() {
     if (p?.gender) {
         setGenderMode(p.gender as 'male' | 'female')
     }
-  }, [p?.gender])
+    if (p) {
+        setFormData({
+            firstName: p.name?.split(' ')[0] || '',
+            lastName: p.name?.split(' ')[1] || '',
+            age: p.age || 25,
+            height: p.height || 175,
+            weight: p.weight || 75
+        })
+    }
+  }, [p])
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    setSaveStatus('Saving...')
+    
+    try {
+        updatePatient({
+            name: `${formData.firstName} ${formData.lastName}`.trim(),
+            age: Number(formData.age),
+            height: Number(formData.height),
+            weight: Number(formData.weight),
+            gender: genderMode
+        })
+        setSaveStatus('Saved!')
+        setTimeout(() => setSaveStatus(null), 2000)
+    } catch (err) {
+        console.error(err)
+        setSaveStatus('Error saving')
+    } finally {
+        setIsSaving(false)
+    }
+  }
 
   const menuItems: { id: TabId; label: string; icon: string }[] = [
     { id: 'profile',       label: t.account.title,         icon: '👤' },
@@ -191,7 +233,7 @@ export default function AccountPage() {
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-mu">
             Your clinical account and twin telemetry are initialized during the medical intake process. Please complete your profile to unlock account management.
           </p>
-          <Link href="/onboarding" 
+          <Link href="/account" 
             className="px-10 py-5 border-[4px] border-black bg-green text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center">
             {t.dashboard.beginIntake} &rarr;
           </Link>
@@ -324,13 +366,54 @@ export default function AccountPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-6 mb-6">
-                      <InputField label="First Name" val={p.name.split(' ')[0]} />
-                      <InputField label="Last Name" val={p.name.split(' ')[1] || ''} />
+                      <InputField label="First Name" value={formData.firstName} onChange={v => setFormData(s => ({ ...s, firstName: v }))} />
+                      <InputField label="Last Name" value={formData.lastName} onChange={v => setFormData(s => ({ ...s, lastName: v }))} />
                     </div>
-                    <div className="grid grid-cols-3 gap-6 mb-6">
-                      <InputField label="Age" val={String(p.age)} type="number" />
-                      <InputField label="Height (cm)" val={String(p.height || 175)} type="number" />
-                      <InputField label="Weight (kg)" val={String(p.weight || 92)} type="number" />
+                    <div className="grid grid-cols-3 gap-6 mb-8">
+                      <InputField label="Age" value={String(formData.age)} onChange={v => setFormData(s => ({ ...s, age: Number(v) }))} type="number" />
+                      <InputField label="Height (cm)" value={String(formData.height)} onChange={v => setFormData(s => ({ ...s, height: Number(v) }))} type="number" />
+                      <InputField label="Weight (kg)" value={String(formData.weight)} onChange={v => setFormData(s => ({ ...s, weight: Number(v) }))} type="number" />
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button 
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="px-10 py-4 border-[4px] border-black font-black uppercase text-[14px] transition-all flex items-center gap-3 relative overflow-hidden"
+                        style={{
+                           backgroundColor: saveStatus === 'Saved!' ? C.green : C.gold,
+                           color: saveStatus === 'Saved!' ? C.white : C.ink,
+                           boxShadow: '6px 6px 0px #000',
+                           transform: isSaving ? 'translate(2px, 2px)' : 'none'
+                        }}
+                      >
+                        {isSaving ? (
+                            <>
+                                <span className="animate-spin text-[18px]">⚡</span>
+                                SAVING...
+                            </>
+                        ) : saveStatus === 'Saved!' ? (
+                            <>
+                                <span>✓</span>
+                                CHANGES PERSISTED
+                            </>
+                        ) : (
+                            <>
+                                <span>💾</span>
+                                SAVE CLINICAL CHANGES
+                            </>
+                        )}
+                        
+                        {/* Zebra progress overlay for saving state */}
+                        {isSaving && (
+                            <motion.div 
+                                className="absolute inset-x-0 bottom-0 h-1 bg-black/20"
+                                initial={{ scaleX: 0 }}
+                                animate={{ scaleX: 1 }}
+                                transition={{ duration: 0.8, ease: "easeInOut" }}
+                            />
+                        )}
+                      </button>
                     </div>
                   </motion.div>
                 )}

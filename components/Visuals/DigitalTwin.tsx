@@ -31,6 +31,7 @@ interface Props {
   showBadges?: boolean
   className?: string
   scale?: number
+  highlightZones?: string[]
 }
 
 const zoneData: Record<string, ZoneInfo> = {
@@ -78,7 +79,8 @@ export function DigitalTwin({
   interactive = true,
   showBadges = true,
   className = '',
-  scale = 1
+  scale = 1,
+  highlightZones = []
 }: Props) {
   const [activeZone, setActiveZone] = useState<string | null>(null)
 
@@ -135,11 +137,16 @@ export function DigitalTwin({
             className={`cursor-pointer transition-all ${activeZone === 'head' ? 'active' : ''}`}
             onClick={() => handleZoneClick('head')}
           >
-            <ellipse 
+            <motion.ellipse 
               cx="160" cy="52" rx="30" ry="38"
-              fill="url(#segGrad)" 
-              stroke={activeZone === 'head' ? '#b8960c' : '#1a3a2a'} 
-              strokeWidth={activeZone === 'head' ? 2.5 : 1.5}
+              fill={highlightZones.includes('head') ? 'rgba(192, 57, 43, 0.1)' : 'url(#segGrad)'} 
+              stroke={highlightZones.includes('head') ? '#c0392b' : activeZone === 'head' ? '#b8960c' : '#1a3a2a'} 
+              strokeWidth={highlightZones.includes('head') ? 3 : activeZone === 'head' ? 2.5 : 1.5}
+              animate={highlightZones.includes('head') ? {
+                strokeWidth: [3, 5, 3],
+                opacity: [0.8, 1, 0.8]
+              } : {}}
+              transition={{ duration: 1.5, repeat: Infinity }}
             />
           </g>
 
@@ -151,11 +158,16 @@ export function DigitalTwin({
             className={`cursor-pointer transition-all ${activeZone === 'chest' ? 'active' : ''}`}
             onClick={() => handleZoneClick('chest')}
           >
-            <path 
+            <motion.path 
               d="M118 118 Q115 120 112 145 L108 200 L108 230 Q110 235 118 238 L160 244 L202 238 Q210 235 212 230 L212 200 L208 145 Q205 120 202 118 L185 112 Q160 108 135 112 Z"
-              fill="url(#segGrad)" 
-              stroke={activeZone === 'chest' ? '#b8960c' : '#1a3a2a'} 
-              strokeWidth={activeZone === 'chest' ? 2.5 : 1.5}
+              fill={highlightZones.includes('chest') ? 'rgba(192, 57, 43, 0.15)' : 'url(#segGrad)'} 
+              stroke={highlightZones.includes('chest') ? '#c0392b' : activeZone === 'chest' ? '#b8960c' : '#1a3a2a'} 
+              strokeWidth={highlightZones.includes('chest') ? 3.5 : activeZone === 'chest' ? 2.5 : 1.5}
+              animate={highlightZones.includes('chest') ? {
+                strokeWidth: [3.5, 6, 3.5],
+                opacity: [0.7, 1, 0.7]
+              } : {}}
+              transition={{ duration: 1.2, repeat: Infinity }}
             />
           </g>
 
@@ -164,11 +176,16 @@ export function DigitalTwin({
             className={`cursor-pointer transition-all ${activeZone === 'abdomen' ? 'active' : ''}`}
             onClick={() => handleZoneClick('abdomen')}
           >
-            <path 
+            <motion.path 
               d="M118 238 L160 244 L202 238 L205 270 Q205 290 200 310 L192 330 Q175 342 160 344 Q145 342 128 330 L120 310 Q115 290 115 270 Z"
-              fill={activeZone === 'abdomen' ? 'rgba(192, 57, 43, 0.05)' : 'url(#segGrad)'}
-              stroke={activeZone === 'abdomen' ? '#c0392b' : '#1a3a2a'}
-              strokeWidth={activeZone === 'abdomen' ? 2.5 : 1.5}
+              fill={highlightZones.includes('abdomen') ? 'rgba(192, 57, 43, 0.15)' : activeZone === 'abdomen' ? 'rgba(192, 57, 43, 0.05)' : 'url(#segGrad)'}
+              stroke={highlightZones.includes('abdomen') ? '#c0392b' : activeZone === 'abdomen' ? '#c0392b' : '#1a3a2a'}
+              strokeWidth={highlightZones.includes('abdomen') ? 3.5 : activeZone === 'abdomen' ? 2.5 : 1.5}
+              animate={highlightZones.includes('abdomen') ? {
+                strokeWidth: [3.5, 6, 3.5],
+                opacity: [0.7, 1, 0.7]
+              } : {}}
+              transition={{ duration: 1.2, repeat: Infinity, delay: 0.3 }}
             />
           </g>
 

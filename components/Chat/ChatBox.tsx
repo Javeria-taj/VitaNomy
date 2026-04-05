@@ -27,15 +27,35 @@ export function ChatBox() {
     addChatMessage(userMsg)
     setInput('')
 
-    // Simulate AI response logic
+    // Real AI response logic
     setLoading('chat', true)
-    setTimeout(() => {
-      setLoading('chat', false)
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        patient: patient,
+        analysis: analysis,
+        message: input.trim(),
+        history: chatHistory
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
       addChatMessage({
         role: 'assistant',
-        content: `Based on your profile (Age ${patient?.age}, BP ${patient?.mode === 'patient' ? patient.systolic_bp : 0}/${patient?.mode === 'patient' ? patient.diastolic_bp : 0}), this specific intervention would likely shift your ${(analysis?.risk_scores.overall_risk ?? 'unknown').toLowerCase()} risk profile. Historical simulations show a 12% improvement in cardiac strain for similar cohorts.`
+        content: data.reply
       })
-    }, 1200)
+    })
+    .catch(err => {
+      console.error('Chat Error:', err)
+      addChatMessage({
+        role: 'assistant',
+        content: 'I encountered an error. Please try again later.'
+      })
+    })
+    .finally(() => {
+      setLoading('chat', false)
+    })
   }
 
   return (

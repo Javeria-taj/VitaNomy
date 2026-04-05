@@ -210,7 +210,8 @@ export default function SimulatorPage() {
           exercise: exercise >= 4 ? 'heavy' : exercise >= 2 ? 'moderate' : 'none',
           smoking: isSmoker,
           glucose: (patient.glucose || 100) - (carb < 100 ? 10 : 0),
-          systolic_bp: (patient.systolic_bp || 120) - (isMeds ? 10 : 0) - (sodium < 2000 ? 5 : 0)
+          systolic_bp: (patient.systolic_bp || 120) - (isMeds ? 10 : 0) - (sodium < 2000 ? 5 : 0),
+          stress_level: stress
         }
       }
 
@@ -291,7 +292,7 @@ export default function SimulatorPage() {
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-black/50">
             {t.simulator.lockedDesc}
           </p>
-          <Link href="/onboarding" 
+          <Link href="/simulator" 
             className="px-10 py-5 border-[4px] border-black bg-[#1B5E3B] text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center">
             {t.chat.initTwin} &rarr;
           </Link>
@@ -409,29 +410,53 @@ export default function SimulatorPage() {
 
           <div className="flex-1 relative flex flex-col md:flex-row items-center justify-center gap-8 md:gap-4 p-6 overflow-hidden">
             <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `repeating-linear-gradient(0deg,rgba(244,242,233,0.04) 0px,rgba(244,242,233,0.04) 1px,transparent 1px,transparent 48px),repeating-linear-gradient(90deg,rgba(244,242,233,0.04) 0px,rgba(244,242,233,0.04) 1px,transparent 1px,transparent 48px)` }} />
-            <div className="flex flex-col items-center gap-4 flex-1 relative z-10">
+            <div className="flex flex-col items-center gap-2 flex-1 relative z-10">
               <div className="text-[9px] font-black uppercase tracking-widest px-3 py-1 border-[2px] border-[#F4F2E9]/40 text-[#F4F2E9]/60">BASELINE</div>
-              <SimulatorBody type="baseline" vitals={baseline.vitals} />
+              <SimulatorBody 
+                type="baseline" 
+                vitals={baseline.vitals} 
+                issues={(() => {
+                  const issues = [];
+                  const r = baseline.risks;
+                  if (r.cardiovascular > 35 || r.cardiac > 35 || r.hypertension > 35) issues.push('chest');
+                  if (r.diabetes > 30 || r.hepatotoxicity > 30 || r.endocrine_suppression > 30 || r.hematological > 30) issues.push('abdomen');
+                  if (patient.stress_level && patient.stress_level > 7) issues.push('head');
+                  return issues;
+                })()} 
+              />
             </div>
-            <div className="flex md:flex-col items-center gap-2 shrink-0 relative z-10">
+            <div className="flex md:flex-col items-center gap-2 shrink-0 relative z-10 pt-10">
               <div className="h-[2px] w-12 md:w-[2px] md:h-16 bg-[#F4F2E9]/30" />
               <div className="w-9 h-9 border-[3px] border-black flex items-center justify-center text-[11px] font-black bg-[#C9A84C] text-black shadow-[2px_2px_0px_#000]">VS</div>
               <div className="h-[2px] w-12 md:w-[2px] md:h-16 bg-[#F4F2E9]/30" />
             </div>
-            <div className="flex flex-col items-center gap-4 flex-1 relative z-10">
+            <div className="flex flex-col items-center gap-2 flex-1 relative z-10">
               <div className="text-[9px] font-black uppercase tracking-widest px-3 py-1 border-[2px] border-[#C9A84C] text-[#C9A84C]">SIMULATED · {timeline}</div>
-              <AnimatePresence mode="wait">
-                {!isSimulating ? (
-                  <motion.div key="sim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <SimulatorBody type="simulated" vitals={sim.vitals} />
-                  </motion.div>
-                ) : (
-                  <div key="loader" className="h-[310px] w-[180px] flex flex-col items-center justify-center gap-3">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-[#F4F2E9]/50">Recalculating</div>
-                    <motion.div animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.5, repeat: Infinity }} className="w-12 h-12 border-[3px] border-[#C9A84C]" />
-                  </div>
-                )}
-              </AnimatePresence>
+              <div className="w-[300px] h-[520px] flex items-center justify-center relative">
+                <AnimatePresence mode="wait">
+                  {!isSimulating ? (
+                    <motion.div key="sim" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                      <SimulatorBody 
+                        type="simulated" 
+                        vitals={sim.vitals} 
+                        issues={(() => {
+                          const issues = [];
+                          const r = sim.risks;
+                          if (r.cardiovascular > 35 || r.cardiac > 35 || r.hypertension > 35) issues.push('chest');
+                          if (r.diabetes > 30 || r.hepatotoxicity > 30 || r.endocrine_suppression > 30 || r.hematological > 30) issues.push('abdomen');
+                          if (stress > 7) issues.push('head');
+                          return issues;
+                        })()}
+                      />
+                    </motion.div>
+                  ) : (
+                    <div key="loader" className="w-[300px] h-[520px] border-[3px] border-black bg-black/20 flex flex-col items-center justify-center gap-3 backdrop-blur-sm shadow-[8px_8px_0px_#000]">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-[#F4F2E9]">Recalculating</div>
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="w-8 h-8 border-t-[3px] border-r-[3px] border-[#C9A84C]" />
+                    </div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </div>
@@ -447,7 +472,7 @@ export default function SimulatorPage() {
               </>
             ) : (
               <>
-                <RiskGauge label="Hepatotoxicity" icon="🧪" currentScore={sim.risks.hepatotoxicity} baselineScore={baseline.risks.hepatotoxicity} unit="%" status={sim.risks.hepatotoxicity < 30 ? 'NORMAL' : 'ELELVATED'} color="#E07A5F" />
+                <RiskGauge label="Hepatotoxicity" icon="🧪" currentScore={sim.risks.hepatotoxicity} baselineScore={baseline.risks.hepatotoxicity} unit="%" status={sim.risks.hepatotoxicity < 30 ? 'NORMAL' : 'ELEVATED'} color="#E07A5F" />
                 <RiskGauge label="Endocrine Suppression" icon="⚖️" currentScore={sim.risks.endocrine_suppression} baselineScore={baseline.risks.endocrine_suppression} unit="%" status={sim.risks.endocrine_suppression < 40 ? 'STABLE' : 'CRITICAL'} color="#C9A84C" />
                 <RiskGauge label="Cardiovascular" icon="❤️" currentScore={sim.risks.cardiovascular} baselineScore={baseline.risks.cardiovascular} unit="%" status={sim.risks.cardiovascular < 30 ? 'MODERATE' : 'HIGH'} color="#2E7D52" />
                 <RiskGauge label="Hematological" icon="🩸" currentScore={sim.risks.hematological} baselineScore={baseline.risks.hematological} unit="%" status={sim.risks.hematological < 30 ? 'NORMAL' : 'STRESSED'} color="#113826" />

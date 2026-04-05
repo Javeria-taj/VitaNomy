@@ -67,6 +67,43 @@
   }
 }
 
+/* --- Print Optimization for Clinical Reports --- */
+@media print {
+  /* Hide all UI navigation and interactive elements */
+  nav, .topbar, .sidebar, .footer, button, .chat-box, .interaction-footer, .no-print {
+    display: none !important;
+  }
+
+  /* Reset layout for full-page PDF utility */
+  body, html {
+    background-color: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm; /* A4 width */
+    height: 297mm; /* A4 height */
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Ensure brutalist borders and shadows are preserved */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .clinical-report {
+    padding: 40px;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
 /* Custom Utilities & Animations */
 @keyframes grid-drift {
   from { background-position: 0 0; }

@@ -74,6 +74,7 @@ function calculatePatientRisks(p: PatientInput): PatientRiskScores {
   const hdl = p.cholesterol_hdl ?? 0;
   const systolic = p.systolic_bp ?? 0;
   const diastolic = p.diastolic_bp ?? 0;
+  const stress = p.stress_level ?? 5;
   const conditions = p.existing_conditions || [];
 
   // Present counters
@@ -105,6 +106,8 @@ function calculatePatientRisks(p: PatientInput): PatientRiskScores {
   if (smoking) { diaScore += 8; diaDrivers.push({label: 'Active smoking', points: 8}); }
   if (alcohol === 'heavy') { diaScore += 8; diaDrivers.push({label: 'Heavy alcohol consumption', points: 8}); }
   else if (alcohol === 'moderate') { diaScore += 3; diaDrivers.push({label: 'Moderate alcohol consumption', points: 3}); }
+
+  if (stress > 7) { diaScore += 8; diaDrivers.push({label: 'High psychological stress level', points: 8}); }
 
   // Interactions
   if (smoking && exercise === 'none') { diaScore += 10; diaDrivers.push({label: 'Smoking + zero exercise compounding risk', points: 10}); }
@@ -140,6 +143,8 @@ function calculatePatientRisks(p: PatientInput): PatientRiskScores {
   if (conditions.includes('type2_diabetes') || conditions.includes('diabetes') || conditions.includes('prediabetes')) { 
     carScore += 12; carDrivers.push({label: 'Existing diabetes/prediabetes', points: 12}); 
   }
+
+  if (stress > 7) { carScore += 10; carDrivers.push({label: 'Chronic high stress impacting cardiac load', points: 10}); }
 
   // Interactions
   if (smoking && cholesterol >= 240) { carScore += 15; carDrivers.push({label: 'Smoking + high cholesterol compounding risk', points: 15}); }
