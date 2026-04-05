@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePatientStore } from '@/store/patientStore'
+import { useTranslation } from '@/hooks/useTranslation'
 import { ChatMessage } from '@/types/patient'
-import { DEMO_PATIENT, MOCK_ANALYSIS } from '@/data/mockData'
 import { Topbar } from '@/components/Layout/Topbar'
 import { TypoAvatar } from '@/components/Common/TypoAvatar'
 
@@ -19,6 +19,7 @@ const C = {
   electricYellow:'#C9A84C', // Gold accent — matches website palette
   red:           '#C0392B',
   mu:            '#5C7268',  // muted text
+  goldPale:      '#F7EDD0',  // clinical gold pale
 }
 
 
@@ -84,6 +85,7 @@ const getScore = (val: any): number => typeof val === 'number' ? val : (val?.sco
 // ─── Main Chat Component ───────────────────────────────────────────────────────
 export default function ChatPage() {
   const { patient, analysis, chatHistory, addChatMessage, setLoading, loadingChat } = usePatientStore()
+  const { t } = useTranslation()
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -92,16 +94,17 @@ export default function ChatPage() {
       <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: C.beige, color: C.black, fontFamily: "'Inter', sans-serif" }}>
         <Topbar />
         <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
-          <div className="w-24 h-24 border-[4px] border-black bg-white flex items-center justify-center text-[40px] mb-8 shadow-[8px_8px_0px_#000]">
+          <div className="w-24 h-24 border-[4px] border-black flex items-center justify-center text-[40px] mb-8 shadow-[8px_8px_0px_#000]"
+            style={{ backgroundColor: C.goldPale }}>
             💬
           </div>
-          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4">Chat Locked</h1>
+          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4">{t.chat.locked}</h1>
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-mu">
-            Dr. Vita needs your clinical twin data to provide personalized medical insights. Please complete your intake to start the conversation.
+            {t.chat.lockedDesc}
           </p>
           <Link href="/onboarding" 
-            className="px-10 py-5 border-[4px] border-black bg-darkGreen text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-            Initialize Twin &rarr;
+            className="px-10 py-5 border-[4px] border-black bg-green text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center">
+            {t.chat.initTwin} &rarr;
           </Link>
         </div>
       </div>
@@ -362,7 +365,7 @@ export default function ChatPage() {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                      placeholder="Ask Dr. Vita about your health, diet, medication, or simulate a scenario..."
+                      placeholder={t.chat.inputPlaceholder}
                       className="w-full bg-transparent p-4 pb-4 pr-24 text-[15px] font-bold focus:outline-none resize-none align-bottom h-full"
                       rows={1}
                     />

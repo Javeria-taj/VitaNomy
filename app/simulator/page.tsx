@@ -6,6 +6,7 @@ import { SimulatorBody } from '@/components/Simulator/SimulatorBody'
 import { RiskGauge } from '@/components/Simulator/RiskGauge'
 import Link from 'next/link'
 import { usePatientStore } from '@/store/patientStore'
+import { useTranslation } from '@/hooks/useTranslation'
 import { AnyPatientInput, AnalyzeResponse, PatientInput } from '@/types/patient'
 import { Topbar } from '@/components/Layout/Topbar'
 
@@ -147,6 +148,7 @@ export default function SimulatorPage() {
   const [isSimulating, setIsSimulating] = useState(false)
 
   const { patient, analysis, setMode } = usePatientStore()
+  const { t } = useTranslation()
 
   // --- BASELINE (From Store or Default) ---
   const baseline = (analysis && patient) ? {
@@ -226,13 +228,13 @@ export default function SimulatorPage() {
             style={{ backgroundColor: '#F7EDD0' }}>
             ⚡
           </div>
-          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4">Simulator Locked</h1>
+          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4">{t.simulator.locked}</h1>
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10 text-black/50">
-            The What-If Simulator requires your baseline twin data to run projections. Please complete your clinical intake to unlock this module.
+            {t.simulator.lockedDesc}
           </p>
           <Link href="/onboarding" 
             className="px-10 py-5 border-[4px] border-black bg-[#1B5E3B] text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-            Unlock Simulator &rarr;
+            {t.chat.initTwin} &rarr;
           </Link>
         </div>
       </div>
@@ -256,10 +258,10 @@ export default function SimulatorPage() {
             Dashboard › What-If Simulator
           </div>
           <h1 className="text-[28px] font-black text-black tracking-tight leading-tight">
-            Simulate your <span style={{ color: '#2E7D52' }}>health future</span>
+            {t.simulator.title.split('health future')[0]} <span style={{ color: '#2E7D52' }}>{t.simulator.title.includes('health future') ? 'health future' : ''}</span>
           </h1>
           <p className="text-[12px] font-bold text-black/50 mt-1">
-            Adjust lifestyle variables. Your AI twin recalculates instantly.
+            {t.simulator.subtitle}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -275,18 +277,18 @@ export default function SimulatorPage() {
             className="border-[3px] border-black px-3 py-2 text-[11px] font-black bg-white transition-all"
             style={{ boxShadow: '3px 3px 0px #000000' }}
           >
-            ↺ Reset All
+            ↺ {t.simulator.reset}
           </button>
         </div>
       </div>
 
       {/* ── PRESET SCENARIOS ─────────────────────────────────────────────────── */}
       <div className="px-6 py-4 border-b-[3px] border-black flex items-center gap-3 overflow-x-auto" style={{ backgroundColor: '#EDE9DC' }}>
-        <span className="text-[10px] font-black uppercase tracking-widest text-black/40 shrink-0">Presets ↓</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-black/40 shrink-0">{t.simulator.presets} ↓</span>
         {[
-          { id: 'clean', icon: '🥗', name: 'Clean Living', desc: 'Diet + exercise + sleep' },
-          { id: 'keto', icon: '🥩', name: 'Keto Protocol', desc: 'Low carb, high fat' },
-          { id: 'stress', icon: '😰', name: 'High Stress', desc: 'Work overload, poor sleep' },
+          { id: 'clean', icon: '🥗', name: t.simulator.cleanLiving, desc: 'Diet + exercise + sleep' },
+          { id: 'keto', icon: '🥩', name: t.simulator.keto, desc: 'Low carb, high fat' },
+          { id: 'stress', icon: '😰', name: t.simulator.stress, desc: 'Work overload, poor sleep' },
         ].map(p => (
           <button
             key={p.id}
@@ -314,7 +316,7 @@ export default function SimulatorPage() {
         >
           {/* Diet section */}
           <div className="mb-2">
-            <span className={SECTION_LABEL}>Diet & Nutrition</span>
+            <span className={SECTION_LABEL}>{t.simulator.diet}</span>
             <NeoSlider label="Daily Calories" value={cal} min={1200} max={3500} unit=" kcal" onChange={setCal} />
             <NeoSlider label="Carb Intake" value={carb} min={20} max={400} unit="g" onChange={setCarb} />
             <NeoSlider label="Sodium" value={sodium} min={500} max={5000} unit="mg" onChange={setSodium} warn={sodium > 2400} />
@@ -322,7 +324,7 @@ export default function SimulatorPage() {
 
           {/* Activity section */}
           <div className="mb-2 pt-2 border-t-[2px] border-black/10">
-            <span className={SECTION_LABEL}>Activity</span>
+            <span className={SECTION_LABEL}>{t.simulator.activity}</span>
             <NeoToggleGroup
               label="Exercise / Week"
               options={[
@@ -351,8 +353,8 @@ export default function SimulatorPage() {
             onClick={runSimulation}
             disabled={isSimulating}
             type="button"
-            className="w-full border-[3px] border-black py-4 text-[14px] font-black mt-2 disabled:opacity-50 disabled:cursor-wait transition-all"
-            style={{ backgroundColor: '#C9A84C', boxShadow: '4px 4px 0px #000000' }}
+            className="w-full border-[3px] border-black py-4 text-[14px] font-black mt-2 disabled:opacity-50 disabled:cursor-wait transition-all bg-gold text-black uppercase"
+            style={{ boxShadow: '4px 4px 0px #000000' }}
           >
             {isSimulating ? '⟳ Recalculating...' : 'Run Simulation →'}
           </motion.button>

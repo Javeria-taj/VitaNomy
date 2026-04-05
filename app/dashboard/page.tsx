@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePatientStore } from '@/store/patientStore'
+import { useTranslation } from '@/hooks/useTranslation'
 import { DEMO_PATIENT, MOCK_ANALYSIS } from '@/data/mockData'
 import { Topbar } from '@/components/Layout/Topbar'
 import { TypoAvatar } from '@/components/Common/TypoAvatar'
@@ -129,6 +130,7 @@ const getScore = (val: any): number => typeof val === 'number' ? val : (val?.sco
 
 export default function DashboardPage() {
   const { patient, analysis, setMode } = usePatientStore()
+  const { t } = useTranslation()
   const [view, setView] = useState<'input' | 'results'>('input')
 
   const p = patient
@@ -143,13 +145,13 @@ export default function DashboardPage() {
             style={{ backgroundColor: C.goldPale }}>
             🧬
           </div>
-          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4" style={{ color: C.ink }}>No Twin Detected</h1>
+          <h1 className="text-[32px] font-black uppercase tracking-tighter mb-4" style={{ color: C.ink }}>{t.dashboard.noTwin}</h1>
           <p className="max-w-md text-[14px] font-bold leading-relaxed mb-10" style={{ color: C.mu }}>
-            You haven't synchronized your clinical data yet. To generate your digital twin and see real-time health analysis, please complete the medical intake.
+            {t.dashboard.noTwinDesc}
           </p>
           <Link href="/onboarding" 
-            className="px-10 py-5 border-[4px] border-black bg-green text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-            Begin Clinical Intake &rarr;
+            className="px-10 py-5 border-[4px] border-black bg-green text-white font-black text-[18px] uppercase tracking-widest shadow-[8px_8px_0px_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all flex items-center justify-center">
+            {t.dashboard.beginIntake} &rarr;
           </Link>
         </div>
       </div>
@@ -177,7 +179,7 @@ export default function DashboardPage() {
               style={view === v
                 ? { color: C.green, borderColor: C.green }
                 : { color: C.mu, borderColor: 'transparent' }}>
-              {v === 'input' ? 'Builder' : 'Analysis'}
+              {v === 'input' ? t.dashboard.builder : t.dashboard.analysis}
             </button>
           ))}
         </div>
@@ -189,7 +191,7 @@ export default function DashboardPage() {
             className="flex-1 grid border-b-[2px] border-black lg:grid-cols-[280px_1fr_240px] overflow-hidden">
             <div className="p-5 border-r-[2px] border-black bg-white overflow-y-auto">
               <div>
-                <SectionHeader icon="👤" title="Profile Details" />
+                <SectionHeader icon="👤" title={t.dashboard.profile} />
                 <FieldRow label="Legal Name" value={p.name} />
                 <div className="grid grid-cols-2 gap-2">
                   <FieldRow label="Age" value={`${p.age} yr`} />
@@ -199,7 +201,7 @@ export default function DashboardPage() {
 
               {/* Cardiac — ACTIVE */}
               <div className="mb-5 border-[2.5px] p-2 -mx-1" style={{ borderColor: C.danger, backgroundColor: '#FFF5F5' }}>
-                <SectionHeader icon="❤️" title="Cardiac"
+                <SectionHeader icon="❤️" title={t.dashboard.cardiac}
                   badge={<NBadge label="● Active" color={C.danger} bg="#FDE8E8" />} />
                 <div className="text-[9px] font-black uppercase mb-2" style={{ color: C.danger }}>→ Chest zone — entering now</div>
                 <div className="grid grid-cols-2 gap-2">
@@ -211,7 +213,7 @@ export default function DashboardPage() {
 
               {/* Metabolic */}
               <div className="mb-5">
-                <SectionHeader icon="⏱" title="Metabolic" />
+                <SectionHeader icon="⏱" title={t.dashboard.metabolic} />
                 <div className="text-[9px] font-black uppercase mb-2" style={{ color: C.warn }}>→ Abdomen zone</div>
                 <FieldRow label="Fasting Blood Glucose" value={`${p.glucose} mg/dL`} />
                 <div className="grid grid-cols-2 gap-2">
@@ -222,7 +224,7 @@ export default function DashboardPage() {
 
               {/* Lifestyle */}
               <div>
-                <SectionHeader icon="🏃" title="Lifestyle" />
+                <SectionHeader icon="🏃" title={t.dashboard.lifestyle} />
                 <FieldRow label="Physical Activity" value={(p.exercise || 'none').charAt(0).toUpperCase() + (p.exercise || 'none').slice(1) + ' active'} />
                 <FieldRow label="Smoking Status" value={p.smoking ? 'Smoker' : 'Non-smoker'} />
                 <FieldRow label="Family History" value={p.family_history ? 'Yes — known conditions' : 'None known'} />
@@ -267,7 +269,7 @@ export default function DashboardPage() {
             {/* LEFT: Risk Map */}
             <div className="border-r-[2px] border-black p-4 flex flex-col items-center" style={{ backgroundColor: C.beige }}>
               <div className="flex justify-between items-center w-full mb-3">
-                <span className="text-[12px] font-black" style={{ color: C.tx }}>Risk Map</span>
+                <span className="text-[12px] font-black" style={{ color: C.tx }}>{t.dashboard.riskMap}</span>
                 <span className="text-[10px] px-2 py-0.5 border-[1.5px] border-black"
                   style={{ backgroundColor: C.beige2, color: C.mu }}>
                   {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
