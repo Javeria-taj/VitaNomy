@@ -29,7 +29,7 @@ export function PatientBanner() {
       <div>
         <div className="text-[16px] font-bold">{patient.name}</div>
         <div className="text-[12px] text-text-secondary mt-0.5 font-medium">
-          {patient.age} yr · {patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)} · BMI {bmi} {patient.mode === 'patient' ? ` · ${(patient as PatientInput).smoking ? 'Smoker' : 'Non-smoker'} · ${(patient as PatientInput).exercise.charAt(0).toUpperCase() + (patient as PatientInput).exercise.slice(1)} exercise` : ''}
+          {patient.age} yr · {patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)} · BMI {bmi} {patient.mode === 'patient' ? ` · ${(patient as PatientInput).smoking ? 'Smoker' : 'Non-smoker'} · ${((patient as PatientInput).exercise ?? 'none').charAt(0).toUpperCase() + ((patient as PatientInput).exercise ?? 'none').slice(1)} exercise` : ''}
         </div>
       </div>
       {analysis && (

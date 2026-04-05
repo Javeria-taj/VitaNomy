@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Persistence with error handling
     try {
-      const session = await prisma.session.upsert({
+      const session = await prisma.healthSession.upsert({
         where: { patientId: patient.name.replace(/\s+/g, '-').toLowerCase() }, // Reusing name as base to keep history linked? 
         // Based on prompt, we generate a timestamped patient_id, but the session model uses patientId. 
         // We will simplify and use the name-based ID for session linking.

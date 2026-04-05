@@ -83,9 +83,11 @@ export async function getInsights(
     if (patient.mode === 'patient') {
       const p = patient as PatientInput;
       const s = scores as PatientRiskScores;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sp = s as any;
       const bmi = calculateBMI(p.weight, p.height);
       const overall = scores.overall_risk;
-      
+
       prompt = `CLINICAL CASE SUMMARY
 ━━━━━━━━━━━━━━━━━━━━
 Patient: ${p.age}yr ${p.gender}, BMI: ${bmi} ${getReferenceFlag(bmi, 18.5, 24.9)}
@@ -115,14 +117,14 @@ Current Medications:    ${p.current_medications?.length ? p.current_medications.
 
 RISK STRATIFICATION
 ━━━━━━━━━━━━━━━━━━━━
-Diabetes:       ${s.diabetes.score}/100  CI: [${s.diabetes.confidence_interval[0]}–${s.diabetes.confidence_interval[1]}]  Confidence: ${s.diabetes.confidence}
-  Drivers: ${s.diabetes.primary_drivers.join(' | ')}
+Diabetes:       ${sp.diabetes.score}/100  CI: [${sp.diabetes.confidence_interval[0]}–${sp.diabetes.confidence_interval[1]}]  Confidence: ${sp.diabetes.confidence}
+  Drivers: ${sp.diabetes.primary_drivers.join(' | ')}
 
-Cardiac:        ${s.cardiac.score}/100  CI: [${s.cardiac.confidence_interval[0]}–${s.cardiac.confidence_interval[1]}]  Confidence: ${s.cardiac.confidence}
-  Drivers: ${s.cardiac.primary_drivers.join(' | ')}
+Cardiac:        ${sp.cardiac.score}/100  CI: [${sp.cardiac.confidence_interval[0]}–${sp.cardiac.confidence_interval[1]}]  Confidence: ${sp.cardiac.confidence}
+  Drivers: ${sp.cardiac.primary_drivers.join(' | ')}
 
-Hypertension:   ${s.hypertension.score}/100  CI: [${s.hypertension.confidence_interval[0]}–${s.hypertension.confidence_interval[1]}]  Confidence: ${s.hypertension.confidence}
-  Drivers: ${s.hypertension.primary_drivers.join(' | ')}
+Hypertension:   ${sp.hypertension.score}/100  CI: [${sp.hypertension.confidence_interval[0]}–${sp.hypertension.confidence_interval[1]}]  Confidence: ${sp.hypertension.confidence}
+  Drivers: ${sp.hypertension.primary_drivers.join(' | ')}
 
 Overall Risk:   ${overall}
 
@@ -140,6 +142,8 @@ Return ONLY valid JSON, no markdown, no backticks:
     } else {
       const a = patient as AthleteInput;
       const s = scores as AthleteRiskScores;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sa = s as any;
       const overall = scores.overall_risk;
 
       const compoundsStr = (a.compounds || []).map(c =>
@@ -189,17 +193,17 @@ ${compoundsStr || 'None reported'}
 
 RISK STRATIFICATION
 ━━━━━━━━━━━━━━━━━━━━
-Cardiovascular:         ${s.cardiovascular.score}/100  CI: [${s.cardiovascular.confidence_interval[0]}–${s.cardiovascular.confidence_interval[1]}]  Confidence: ${s.cardiovascular.confidence}
-  Drivers: ${s.cardiovascular.primary_drivers.join(' | ')}
+Cardiovascular:         ${sa.cardiovascular.score}/100  CI: [${sa.cardiovascular.confidence_interval[0]}–${sa.cardiovascular.confidence_interval[1]}]  Confidence: ${sa.cardiovascular.confidence}
+  Drivers: ${sa.cardiovascular.primary_drivers.join(' | ')}
 
-Hepatotoxicity:         ${s.hepatotoxicity.score}/100  CI: [${s.hepatotoxicity.confidence_interval[0]}–${s.hepatotoxicity.confidence_interval[1]}]  Confidence: ${s.hepatotoxicity.confidence}
-  Drivers: ${s.hepatotoxicity.primary_drivers.join(' | ')}
+Hepatotoxicity:         ${sa.hepatotoxicity.score}/100  CI: [${sa.hepatotoxicity.confidence_interval[0]}–${sa.hepatotoxicity.confidence_interval[1]}]  Confidence: ${sa.hepatotoxicity.confidence}
+  Drivers: ${sa.hepatotoxicity.primary_drivers.join(' | ')}
 
-Endocrine Suppression:  ${s.endocrine_suppression.score}/100  CI: [${s.endocrine_suppression.confidence_interval[0]}–${s.endocrine_suppression.confidence_interval[1]}]  Confidence: ${s.endocrine_suppression.confidence}
-  Drivers: ${s.endocrine_suppression.primary_drivers.join(' | ')}
+Endocrine Suppression:  ${sa.endocrine_suppression.score}/100  CI: [${sa.endocrine_suppression.confidence_interval[0]}–${sa.endocrine_suppression.confidence_interval[1]}]  Confidence: ${sa.endocrine_suppression.confidence}
+  Drivers: ${sa.endocrine_suppression.primary_drivers.join(' | ')}
 
-Hematological:          ${s.hematological.score}/100  CI: [${s.hematological.confidence_interval[0]}–${s.hematological.confidence_interval[1]}]  Confidence: ${s.hematological.confidence}
-  Drivers: ${s.hematological.primary_drivers.join(' | ')}
+Hematological:          ${sa.hematological.score}/100  CI: [${sa.hematological.confidence_interval[0]}–${sa.hematological.confidence_interval[1]}]  Confidence: ${sa.hematological.confidence}
+  Drivers: ${sa.hematological.primary_drivers.join(' | ')}
 
 Overall Risk:           ${overall}
 
@@ -227,8 +231,12 @@ Return ONLY valid JSON, no markdown, no backticks:
     const cleanJSON = stripMarkdownJSON(textContent);
     return JSON.parse(cleanJSON);
 
-  } catch (error) {
-    console.error('Claude API Error (Insights):', error);
+  } catch (error: any) {
+    if (error?.status === 400 && error?.message?.includes('credit balance')) {
+      console.warn('Claude API: Credit balance low. Using static clinical fallbacks.');
+    } else {
+      console.error('Claude API Error (Insights):', error);
+    }
     return patient.mode === 'athlete' ? FALLBACK_ATHLETE_INSIGHTS : FALLBACK_PATIENT_INSIGHTS;
   }
 }
@@ -258,8 +266,12 @@ Be specific about which changes matter most. Do not use bullet points.`;
 
     // @ts-ignore
     return (message.content[0]?.text || '').trim();
-  } catch (error) {
-    console.error('Claude API Error (Simulation):', error);
+  } catch (error: any) {
+    if (error?.status === 400 && error?.message?.includes('credit balance')) {
+      console.warn('Claude API: Credit balance low. Using static simulation fallback.');
+    } else {
+      console.error('Claude API Error (Simulation):', error);
+    }
     return `The ${scenario} intervention is projected to result in the following changes over ${timeframe}: ${Object.entries(delta).map(([k, v]) => `${k} changes by ${v > 0 ? '+' : ''}${v} points`).join(', ')}.`;
   }
 }
@@ -304,8 +316,12 @@ Never prescribe. Be concise. Maximum 3 sentences.`;
 
     // @ts-ignore
     return (response.content[0]?.text || '').trim();
-  } catch (error) {
-    console.error('Claude API Error (Chat):', error);
+  } catch (error: any) {
+    if (error?.status === 400 && error?.message?.includes('credit balance')) {
+      console.warn('Claude API: Credit balance low. Static chat fallback active.');
+    } else {
+      console.error('Claude API Error (Chat):', error);
+    }
     return "I'm having trouble connecting to my analysis core right now. Please consult with your physician regarding your data.";
   }
 }

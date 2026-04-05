@@ -5,37 +5,26 @@ import React from 'react'
 export function Marquee() {
   return (
     <div className="bg-em border-y-2 border-ink py-3 overflow-hidden relative flex">
-      <div className="flex animate-[ms_24s_linear_infinite] w-max" style={{ animationTimingFunction: 'linear' }}>
+      <div className="flex animate-[ms_20s_linear_infinite] w-max font-display text-[22px] uppercase tracking-[0.1em] py-1" style={{ animationTimingFunction: 'linear' }}>
         {/* Render twice for endless loop */}
         {[...Array(2)].map((_, i) => (
           <React.Fragment key={i}>
-            <div className="flex items-center gap-2.5 px-5.5 text-[12.5px] font-medium text-white/90 whitespace-nowrap">
-              <span className="text-gd text-[15px]">◆</span>3D Body Digital Twin
-            </div>
-            <div className="flex items-center gap-2.5 px-5.5 text-[12.5px] font-medium text-white/90 whitespace-nowrap">
-              <span className="text-gd text-[15px]">◆</span>AI Risk Prediction
-            </div>
-            <div className="flex items-center gap-2.5 px-5.5 text-[12.5px] font-medium text-white/90 whitespace-nowrap">
-              <span className="text-gd text-[15px]">◆</span>What-If Simulator
-            </div>
-            <div className="flex items-center gap-2.5 px-5.5 text-[12.5px] font-medium text-white/90 whitespace-nowrap">
-              <span className="text-gd text-[15px]">◆</span>Gender-Aware Insights
-            </div>
-            <div className="flex items-center gap-2.5 px-5.5 text-[12.5px] font-medium text-white/90 whitespace-nowrap">
-              <span className="text-gd text-[15px]">◆</span>PDF Health Reports
-            </div>
-            <div className="flex items-center gap-2.5 px-5.5 text-[12.5px] font-medium text-white/90 whitespace-nowrap">
-              <span className="text-gd text-[15px]">◆</span>Cardiac Monitoring
-            </div>
-            <div className="flex items-center gap-2.5 px-5.5 text-[12.5px] font-medium text-white/90 whitespace-nowrap">
-              <span className="text-gd text-[15px]">◆</span>Diabetes Risk
-            </div>
-            <div className="flex items-center gap-2.5 px-5.5 text-[12.5px] font-medium text-white/90 whitespace-nowrap">
-              <span className="text-gd text-[15px]">◆</span>Hypertension Tracking
-            </div>
-            <div className="flex items-center gap-2.5 px-5.5 text-[12.5px] font-medium text-white/90 whitespace-nowrap">
-              <span className="text-gd text-[15px]">◆</span>5 Languages
-            </div>
+            {[
+              "3D Body Digital Twin",
+              "AI Risk Prediction",
+              "What-If Simulator",
+              "Gender-Aware Insights",
+              "PDF Health Reports",
+              "Cardiac Monitoring",
+              "Diabetes Protocol",
+              "Hypertension Tracking",
+              "5 Languages Supported"
+            ].map((text, idx) => (
+              <div key={idx} className="flex items-center gap-6 px-8 text-white whitespace-nowrap">
+                <span className="text-gd text-[24px]">⬢</span>
+                {text}
+              </div>
+            ))}
           </React.Fragment>
         ))}
       </div>

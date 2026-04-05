@@ -37,16 +37,22 @@ export function calculateRisks(patient: AnyPatientInput): AnyRiskScores {
   }
 }
 
+function extractScore(val: any): number {
+  if (typeof val === 'number') return val;
+  if (val && typeof val === 'object' && typeof val.score === 'number') return val.score;
+  return 0;
+}
+
 export function getOverallRisk(scores: AnyRiskScores): 'LOW'|'MEDIUM'|'HIGH'|'CRITICAL' {
   let maxScore = 0;
   if (scores.mode === 'patient') {
     const s = scores as PatientRiskScores;
-    maxScore = Math.max(s.diabetes.score, s.cardiac.score, s.hypertension.score);
+    maxScore = Math.max(extractScore(s.diabetes), extractScore(s.cardiac), extractScore(s.hypertension));
   } else {
     const s = scores as AthleteRiskScores;
-    maxScore = Math.max(s.cardiovascular.score, s.hepatotoxicity.score, s.endocrine_suppression.score, s.hematological.score);
+    maxScore = Math.max(extractScore(s.cardiovascular), extractScore(s.hepatotoxicity), extractScore(s.endocrine_suppression), extractScore(s.hematological));
   }
-  
+
   if (maxScore >= 75) return 'CRITICAL';
   if (maxScore >= 55) return 'HIGH';
   if (maxScore >= 35) return 'MEDIUM';

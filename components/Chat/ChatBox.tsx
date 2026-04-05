@@ -22,18 +22,18 @@ export function ChatBox() {
 
   const handleSend = () => {
     if (!input.trim() || loadingChat) return
-    
+
     const userMsg: ChatMessage = { role: 'user', content: input }
     addChatMessage(userMsg)
     setInput('')
-    
+
     // Simulate AI response logic
     setLoading('chat', true)
     setTimeout(() => {
       setLoading('chat', false)
-      addChatMessage({ 
-        role: 'assistant', 
-        content: `Based on your profile (Age ${patient?.age}, BP ${patient?.mode === 'patient' ? patient.systolic_bp : 0}/${patient?.mode === 'patient' ? patient.diastolic_bp : 0}), this specific intervention would likely shift your ${(analysis?.risk_scores?.overall_risk ?? 'unknown').toLowerCase()} risk profile. Historical simulations show a 12% improvement in cardiac strain for similar cohorts.`
+      addChatMessage({
+        role: 'assistant',
+        content: `Based on your profile (Age ${patient?.age}, BP ${patient?.mode === 'patient' ? patient.systolic_bp : 0}/${patient?.mode === 'patient' ? patient.diastolic_bp : 0}), this specific intervention would likely shift your ${(analysis?.risk_scores.overall_risk ?? 'unknown').toLowerCase()} risk profile. Historical simulations show a 12% improvement in cardiac strain for similar cohorts.`
       })
     }, 1200)
   }
@@ -54,26 +54,26 @@ export function ChatBox() {
       </div>
 
       {/* Chat Messages */}
-      <div 
+      <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-5 flex flex-col gap-4 scrollbar-thin scrollbar-thumb-black scrollbar-track-transparent"
       >
         <AnimatePresence initial={false}>
           {chatHistory.map((msg, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`flex gap-3 max-w-[90%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}
             >
-              <div 
+              <div
                 className="w-10 h-10 border-[3px] border-black flex shrink-0 items-center justify-center text-[12px] font-black shadow-[2px_2px_0px_#000000]"
                 style={{ backgroundColor: msg.role === 'assistant' ? '#113826' : '#C9A84C', color: msg.role === 'assistant' ? 'white' : 'black' }}
               >
                 {msg.role === 'assistant' ? 'AI' : initials}
               </div>
-              
-              <div 
+
+              <div
                 className="p-4 border-[3px] border-black text-[13px] font-bold leading-relaxed shadow-[4px_4px_0px_#000000]"
                 style={{ backgroundColor: msg.role === 'assistant' ? 'white' : '#EDE9DC', color: 'black' }}
               >
@@ -85,34 +85,34 @@ export function ChatBox() {
 
         {loadingChat && (
           <div className="flex gap-3">
-             <div className="w-10 h-10 border-[3px] border-black bg-[#113826] flex shrink-0 items-center justify-center text-[12px] font-black text-white shadow-[2px_2px_0px_#000000]">
-               AI
-             </div>
-             <div className="p-4 border-[3px] border-black bg-white shadow-[4px_4px_0px_#000000] flex gap-1 items-center">
-               <div className="w-2 h-2 bg-black animate-bounce [animation-delay:-0.3s]" />
-               <div className="w-2 h-2 bg-black animate-bounce [animation-delay:-0.15s]" />
-               <div className="w-2 h-2 bg-black animate-bounce" />
-             </div>
+            <div className="w-10 h-10 border-[3px] border-black bg-[#113826] flex shrink-0 items-center justify-center text-[12px] font-black text-white shadow-[2px_2px_0px_#000000]">
+              AI
+            </div>
+            <div className="p-4 border-[3px] border-black bg-white shadow-[4px_4px_0px_#000000] flex gap-1 items-center">
+              <div className="w-2 h-2 bg-black animate-bounce [animation-delay:-0.3s]" />
+              <div className="w-2 h-2 bg-black animate-bounce [animation-delay:-0.15s]" />
+              <div className="w-2 h-2 bg-black animate-bounce" />
+            </div>
           </div>
         )}
       </div>
 
       {/* Input Console */}
       <div className="p-4 border-t-[3px] border-black bg-[#EDE9DC]">
-        <div 
+        <div
           className="flex border-[3px] border-black bg-white p-1 transition-all focus-within:shadow-[6px_6px_0px_#000000] focus-within:-translate-x-1 focus-within:-translate-y-1"
           style={{ boxShadow: '4px 4px 0px #000000' }}
         >
-          <input 
-            type="text" 
-            placeholder="Interrogate the digital twin..." 
+          <input
+            type="text"
+            placeholder="Interrogate the digital twin..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             disabled={loadingChat}
             className="flex-1 bg-transparent border-none text-[13px] font-bold px-3 py-2 outline-none text-black placeholder:text-black/30 placeholder:uppercase placeholder:tracking-tighter"
           />
-          <button 
+          <button
             onClick={handleSend}
             disabled={loadingChat || !input.trim()}
             className="px-5 bg-black text-white text-[12px] font-black uppercase tracking-widest hover:bg-[#113826] transition-colors disabled:opacity-20"

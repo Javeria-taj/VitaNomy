@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePatientStore } from '@/store/patientStore'
@@ -23,10 +23,6 @@ const C = {
   red:       '#C0392B',
   redPale:   '#FDE8E8',
 }
-
-
-
-
 
 // ─── Brutalist Toggle ─────────────────────────────────────────────────────────
 function BToggle({ label, sub, checked, onChange }: { label: string; sub?: string; checked: boolean; onChange: () => void }) {
@@ -64,7 +60,7 @@ function NavItem({ icon, label, id, activeTab, setActiveTab }: { icon: string; l
 }
 
 // ─── Panel Header ─────────────────────────────────────────────────────────────
-function PanelHeader({ title, sub, action }: { title: string; sub: string; action?: { label: string; primary?: boolean } }) {
+function PanelHeader({ title, sub, action, onClick }: { title: string; sub: string; action?: { label: string; primary?: boolean }, onClick?: () => void }) {
   return (
     <div className="flex items-start justify-between pb-5 mb-6 border-b-[4px] border-black">
       <div>
@@ -72,7 +68,9 @@ function PanelHeader({ title, sub, action }: { title: string; sub: string; actio
         <p className="text-[11px] font-bold tracking-widest uppercase mt-1" style={{ color: C.mu }}>{sub}</p>
       </div>
       {action && (
-        <button className="px-5 py-2.5 border-[3px] border-black font-black uppercase text-[11px] transition-all hover:translate-x-0.5 hover:translate-y-0.5"
+        <button 
+          onClick={onClick}
+          className="px-5 py-2.5 border-[3px] border-black font-black uppercase text-[11px] transition-all hover:translate-x-0.5 hover:translate-y-0.5"
           style={{
             backgroundColor: action.primary ? C.green : C.white,
             color: action.primary ? C.white : C.ink,
@@ -105,14 +103,23 @@ type TabId = 'profile' | 'metrics' | 'reports' | 'settings' | 'notifications' | 
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function AccountPage() {
-  const { patient, analysis, language, setLanguage } = usePatientStore()
+  const { patient, analysis, updatePatient, language, setLanguage } = usePatientStore()
   const { t } = useTranslation()
   const p = patient
   const a = analysis
 
-  // Use stable IDs — never translated strings — so language switch doesn't break tabs
   const [activeTab, setActiveTab] = useState<TabId>('profile')
-  const [genderMode, setGenderMode] = useState<'m' | 'f'>('m')
+  const [genderMode, setGenderMode] = useState<'male' | 'female'>('male')
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [extractStatus, setExtractStatus] = useState<string | null>(null)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (p?.gender) {
+        setGenderMode(p.gender as 'male' | 'female')
+    }
+  }, [p?.gender])
 
   const menuItems: { id: TabId; label: string; icon: string }[] = [
     { id: 'profile',       label: t.account.title,         icon: '👤' },
@@ -124,6 +131,52 @@ export default function AccountPage() {
     { id: 'privacy',       label: t.account.privacy,        icon: '🔒' },
     { id: 'billing',       label: t.account.billing,        icon: '💳' },
   ]
+
+  const handleFileSelect = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !p) return
+
+    setIsExtracting(true)
+    setExtractStatus('Reading PDF...')
+    
+    try {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1]
+        setExtractStatus('AI Extraction...')
+        const res = await fetch('/api/extract', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pdf_base64: base64,
+            mode: p.mode || 'patient'
+          })
+        })
+
+        if (!res.ok) throw new Error('Extraction failed')
+        const data = await res.json()
+        updatePatient(data.extracted_fields)
+        setExtractStatus('Success! Twin updated.')
+        
+        setTimeout(() => {
+          setExtractStatus(null)
+          setIsExtracting(false)
+        }, 2000)
+      }
+      reader.readAsDataURL(file)
+    } catch (err) {
+      console.error(err)
+      setExtractStatus('Error extracting data.')
+      setTimeout(() => {
+        setExtractStatus(null)
+        setIsExtracting(false)
+      }, 3000)
+    }
+  }
 
   if (!p || !a) {
     return (
@@ -160,7 +213,6 @@ export default function AccountPage() {
         {/* ── HERO BAND ── */}
         <section className="border-b-[4px] border-black shrink-0 relative overflow-hidden"
           style={{ backgroundColor: C.white }}>
-          {/* Brutalist grid overlay */}
           <div className="absolute inset-0 opacity-[0.03]" style={{
             backgroundImage: 'repeating-linear-gradient(0deg, #000 0, #000 2px, transparent 2px, transparent 32px), repeating-linear-gradient(90deg, #000 0, #000 2px, transparent 2px, transparent 32px)'
           }} />
@@ -174,17 +226,16 @@ export default function AccountPage() {
                   <span className="px-2 py-1 border-[2.5px] border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_#000]"
                     style={{ backgroundColor: C.green, color: C.white }}>Pro Plan</span>
                   <span className="px-2 py-1 border-[2.5px] border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_#000]"
-                    style={{ backgroundColor: C.white, color: C.ink }}>{p.gender === 'male' ? '♂' : '♀'} {p.gender.charAt(0).toUpperCase() + p.gender.slice(1)} · {p.age}y</span>
+                    style={{ backgroundColor: C.white, color: C.ink }}>{p.gender === 'male' ? '♂' : '♀'} {p.gender ? (p.gender.charAt(0).toUpperCase() + p.gender.slice(1)) : ''} · {p.age}y</span>
                   <span className="px-2 py-1 border-[2.5px] border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_#000]"
                     style={{ backgroundColor: C.white, color: C.ink }}>📍 Global Presence</span>
                 </div>
                 <div className="text-[11px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>
-                  Twin ID: VN-{Math.floor(1000 + Math.random() * 9000)}-{p.name.charAt(0)} · Member Since 2025
+                   Twin ID: VN-{Math.floor(1000 + Math.random() * 9000)}-{p.name.charAt(0)} · Member Since 2025
                 </div>
               </div>
             </div>
 
-            {/* Brutalist Health Score Block */}
             <div className="border-[4px] border-black p-4 flex flex-col items-center shadow-[6px_6px_0px_#000]"
               style={{ backgroundColor: C.white }}>
               <span className="text-[48px] font-black leading-none tracking-tighter" style={{ color: C.gold }}>72</span>
@@ -192,7 +243,6 @@ export default function AccountPage() {
             </div>
           </div>
 
-          {/* Quick Tabs Bar */}
           <div className="flex border-t-[3px] border-black" style={{ backgroundColor: C.beige2 }}>
             {menuItems.slice(0, 4).map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -208,10 +258,8 @@ export default function AccountPage() {
           </div>
         </section>
 
-        {/* ── SPLIT BODY ── */}
         <div className="flex-1 flex overflow-hidden">
 
-          {/* Sidebar Nav */}
           <aside className="w-[260px] border-r-[4px] border-black shrink-0 overflow-y-auto hidden md:block"
             style={{ backgroundColor: '#F0EBE0' }}>
             <div className="py-4">
@@ -233,7 +281,6 @@ export default function AccountPage() {
             </div>
           </aside>
 
-          {/* Content Area */}
           <div className="flex-1 overflow-y-auto relative" style={{ backgroundColor: C.beige }}>
             <AnimatePresence mode="wait">
               <motion.div
@@ -245,7 +292,6 @@ export default function AccountPage() {
                 className="p-8 max-w-4xl mx-auto"
               >
 
-                {/* ── PANEL: PROFILE ── */}
                 {activeTab === 'profile' && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                     <div className="mb-8 pb-6 border-b-[2px] border-black/5">
@@ -259,10 +305,10 @@ export default function AccountPage() {
                       </label>
                       <div className="flex gap-4">
                         {[
-                          { val: 'm', icon: '♂', label: 'Male' },
-                          { val: 'f', icon: '♀', label: 'Female' },
+                          { val: 'male', icon: '♂', label: 'Male' },
+                          { val: 'female', icon: '♀', label: 'Female' },
                         ].map(opt => (
-                          <button key={opt.val} onClick={() => setGenderMode(opt.val as 'm' | 'f')}
+                          <button key={opt.val} onClick={() => setGenderMode(opt.val as 'male' | 'female')}
                             className="flex-1 border-[3px] border-black p-5 flex flex-col items-center justify-center transition-all"
                             style={{
                               backgroundColor: genderMode === opt.val ? `${C.green}10` : C.white,
@@ -289,7 +335,6 @@ export default function AccountPage() {
                   </motion.div>
                 )}
 
-                {/* ── PANEL: METRICS ── */}
                 {activeTab === 'metrics' && (
                   <div>
                     <PanelHeader title="Health Metrics" sub="Twin live readings and assessments" action={{ label: '+ Log Fasting Reading' }} />
@@ -312,11 +357,35 @@ export default function AccountPage() {
                   </div>
                 )}
 
-                {/* ── PANEL: REPORTS ── */}
                 {activeTab === 'reports' && (
                   <div>
-                    <PanelHeader title="PDF Health Reports" sub="Shareable AI-generated clinical documents" action={{ label: '+ Generate New', primary: true }} />
+                    <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="application/pdf" className="hidden" />
+                    <PanelHeader title="PDF Health Reports" sub="Shareable AI-generated clinical documents" action={{ label: '+ Scan/Upload New PDF', primary: true }} onClick={handleFileSelect} />
+
                     <div className="grid grid-cols-2 gap-6">
+                      <div className="border-[4px] border-black p-5 flex flex-col shadow-[6px_6px_0px_#000] cursor-pointer"
+                        style={{ backgroundColor: C.beige2 }} onClick={handleFileSelect}>
+                        <div className="flex items-start gap-4 mb-4">
+                           <div className="w-12 h-12 border-[3px] border-black flex items-center justify-center text-[20px] shadow-[3px_3px_0px_#000]"
+                                style={{ backgroundColor: C.white }}>
+                             {isExtracting ? '⏳' : '📎'}
+                           </div>
+                           <div>
+                              <div className="font-black text-[14px] uppercase leading-tight mb-1" style={{ color: C.ink }}>
+                                 {isExtracting ? extractStatus : 'Upload Medical Record'}
+                              </div>
+                              <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>
+                                 {isExtracting ? 'Mapping to Twin...' : 'Synchronize new lab data'}
+                              </div>
+                           </div>
+                        </div>
+                        <div className="mt-auto">
+                            <div className="w-full h-2 border-[2px] border-black bg-white overflow-hidden">
+                                {isExtracting && <motion.div className="h-full bg-gold" animate={{ x: ['-100%', '100%'] }} transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }} />}
+                            </div>
+                        </div>
+                      </div>
+
                       {[
                         { t: 'Full Health Assessment', d: 'Apr 1', i: '📋', tag: 'Full Analysis', col: C.gold },
                         { t: 'Clean Living Simulation', d: 'Apr 4', i: '⚡', tag: '1-Month Forecast', col: C.green },
@@ -329,8 +398,8 @@ export default function AccountPage() {
                               {r.i}
                             </div>
                             <div>
-                              <div className="font-black text-[14px] uppercase leading-tight mb-1" style={{ color: C.ink }}>{r.t}</div>
-                              <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>{r.d} · PDF Document</div>
+                               <div className="font-black text-[14px] uppercase leading-tight mb-1" style={{ color: C.ink }}>{r.t}</div>
+                               <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.mu }}>{r.d} · PDF Document</div>
                             </div>
                           </div>
                           <div className="mt-auto flex gap-3">
@@ -349,7 +418,6 @@ export default function AccountPage() {
                   </div>
                 )}
 
-                {/* ── TAB: Language & AI ── */}
                 {activeTab === 'settings' && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                     <div className="mb-8 pb-6 border-b-[2px] border-black/5">
@@ -396,7 +464,6 @@ export default function AccountPage() {
                   </motion.div>
                 )}
 
-                {/* ── PANEL: PLAN ── */}
                 {activeTab === 'billing' && (
                   <div>
                     <PanelHeader title="Billing & Subscription" sub="Review limits and access" />

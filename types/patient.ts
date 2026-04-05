@@ -71,18 +71,18 @@ export interface RiskFactor {
 
 export interface PatientRiskScores {
   mode?: 'patient'
-  diabetes?: RiskFactor | number
-  cardiac?: RiskFactor | number
-  hypertension?: RiskFactor | number
+  diabetes: RiskFactor
+  cardiac: RiskFactor
+  hypertension: RiskFactor
   overall_risk?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string
 }
 
 export interface AthleteRiskScores {
   mode?: 'athlete'
-  cardiovascular?: RiskFactor | number
-  hepatotoxicity?: RiskFactor | number
-  endocrine_suppression?: RiskFactor | number
-  hematological?: RiskFactor | number
+  cardiovascular: RiskFactor
+  hepatotoxicity: RiskFactor
+  endocrine_suppression: RiskFactor
+  hematological: RiskFactor
   overall_risk?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string
 }
 
@@ -110,12 +110,13 @@ export interface ExtractResponse {
 }
 
 // ─── SIMULATE ────────────────────────────────────────────
-export type PatientScenario = 'exercise' | 'diet' | 'quit_smoking' | 'medication'
-export type AthleteScenario = 'reduce_dose' | 'add_organ_support' | 'start_pct' | 'cycle_off'
+export type PatientScenario = 'exercise' | 'diet' | 'quit_smoking' | 'medication' | 'custom'
+export type AthleteScenario = 'reduce_dose' | 'add_organ_support' | 'start_pct' | 'cycle_off' | 'custom'
 
 export interface SimulateRequest {
   patient: AnyPatientInput
   scenario: PatientScenario | AthleteScenario
+  modifiedPatient?: AnyPatientInput
 }
 
 export interface SimulateResponse {

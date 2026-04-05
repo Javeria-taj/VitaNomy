@@ -19,7 +19,8 @@ export const translations = {
       analysis: "Analysis Dashboard",
       builder: "Profile Builder",
       riskMap: "Risk Map",
-      score: "Health Score"
+      score: "Health Score",
+      history: "Clinical History"
     },
     simulator: {
       title: "Health Future Simulator",
@@ -78,7 +79,8 @@ export const translations = {
       analysis: "विश्लेषण डैशबोर्ड",
       builder: "प्रोफ़ाइल बिल्डर",
       riskMap: "जोखिम मानचित्र",
-      score: "स्वास्थ्य स्कोर"
+      score: "स्वास्थ्य स्कोर",
+      history: "चिकित्सा इतिहास"
     },
     simulator: {
       title: "स्वास्थ्य भविष्य सिम्युलेटर",
@@ -137,7 +139,8 @@ export const translations = {
       analysis: "பகுப்பாய்வு டேஷ்போர்டு",
       builder: "சுயவிவர பில்டர்",
       riskMap: "ஆபத்து வரைபடம்",
-      score: "சுகாதார மதிப்பெண்"
+      score: "சுகாதார மதிப்பெண்",
+      history: "மருத்துவ வரலாறு"
     },
     simulator: {
       title: "சுகாதார எதிர்கால சிமுலேட்டர்",
@@ -196,7 +199,8 @@ export const translations = {
       analysis: "విశ్లేషణ డాష్‌బోర్డ్",
       builder: "ప్రొఫైల్ బిల్డర్",
       riskMap: "రిస్క్ మ్యాప్",
-      score: "హెల్త్ స్కోర్"
+      score: "హెల్త్ స్కోర్",
+      history: "వైద్య చరిత్ర"
     },
     simulator: {
       title: "హెల్త్ ఫ్యూచర్ సిమ్యులేటర్",
