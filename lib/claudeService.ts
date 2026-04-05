@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { 
   AnyPatientInput, 
   AnyRiskScores, 
@@ -10,11 +10,11 @@ import {
   AthleteRiskScores
 } from '@/types/patient';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-});
+const genAI = new GoogleGenerativeAI(
+  process.env.GEMINI_API_KEY || ''
+);
 
-const MODEL_NAME = 'claude-sonnet-4-20250514';
+const MODEL_NAME = 'gemini-2.0-flash';
 
 export const FALLBACK_PATIENT_INSIGHTS = {
   insights: [
@@ -220,23 +220,14 @@ Return ONLY valid JSON, no markdown, no backticks:
 "causation_flags":["2-4 specific compound-to-biomarker causal observations with values"]}`;
     }
 
-    const message = await anthropic.messages.create({
-      model: MODEL_NAME,
-      max_tokens: 800,
-      messages: [{ role: 'user', content: prompt }]
-    });
-
-    // @ts-ignore (handling API response shape safely)
-    const textContent = message.content[0]?.text || '';
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+    const result = await model.generateContent(prompt);
+    const textContent = result.response.text() || '';
     const cleanJSON = stripMarkdownJSON(textContent);
     return JSON.parse(cleanJSON);
 
   } catch (error: any) {
-    if (error?.status === 400 && error?.message?.includes('credit balance')) {
-      console.warn('Claude API: Credit balance low. Using static clinical fallbacks.');
-    } else {
-      console.error('Claude API Error (Insights):', error);
-    }
+    console.error('Gemini API Error (Insights):', error);
     return patient.mode === 'athlete' ? FALLBACK_ATHLETE_INSIGHTS : FALLBACK_PATIENT_INSIGHTS;
   }
 }
@@ -258,20 +249,11 @@ ${deltaStr}
 Timeframe: ${timeframe}
 Be specific about which changes matter most. Do not use bullet points.`;
 
-    const message = await anthropic.messages.create({
-      model: MODEL_NAME,
-      max_tokens: 300,
-      messages: [{ role: 'user', content: prompt }]
-    });
-
-    // @ts-ignore
-    return (message.content[0]?.text || '').trim();
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+    const result = await model.generateContent(prompt);
+    return (result.response.text() || '').trim();
   } catch (error: any) {
-    if (error?.status === 400 && error?.message?.includes('credit balance')) {
-      console.warn('Claude API: Credit balance low. Using static simulation fallback.');
-    } else {
-      console.error('Claude API Error (Simulation):', error);
-    }
+    console.error('Gemini API Error (Simulation):', error);
     return `The ${scenario} intervention is projected to result in the following changes over ${timeframe}: ${Object.entries(delta).map(([k, v]) => `${k} changes by ${v > 0 ? '+' : ''}${v} points`).join(', ')}.`;
   }
 }
@@ -311,27 +293,22 @@ Guidelines:
 5. Never prescribe. Always emphasize regular bloodwork monitoring.`;
     }
 
-    const messages = history.map(msg => ({
-      role: (msg.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
-      content: msg.content
-    }));
-    messages.push({ role: 'user', content: message });
-
-    const response = await anthropic.messages.create({
+    const model = genAI.getGenerativeModel({ 
       model: MODEL_NAME,
-      max_tokens: 400,
-      system: systemPrompt,
-      messages: messages
+      systemInstruction: systemPrompt 
     });
 
-    // @ts-ignore
-    return (response.content[0]?.text || '').trim();
+    const chat = model.startChat({
+      history: history.map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      }))
+    });
+
+    const result = await chat.sendMessage(message);
+    return result.response.text().trim();
   } catch (error: any) {
-    if (error?.status === 400 && error?.message?.includes('credit balance')) {
-      console.warn('Claude API: Credit balance low. Static chat fallback active.');
-    } else {
-      console.error('Claude API Error (Chat):', error);
-    }
+    console.error('Gemini API Error (Chat):', error);
     return "I'm having trouble connecting to my analysis core right now. Please consult with your physician regarding your data.";
   }
 }
