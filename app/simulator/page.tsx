@@ -135,24 +135,38 @@ function NeoSwitch({ label, value, onChange, danger = false }: {
 }
 
 export default function SimulatorPage() {
-  const [cal, setCal] = useState(1800)
-  const [carb, setCarb] = useState(180)
-  const [sodium, setSodium] = useState(1500)
-  const [exercise, setExercise] = useState(4)
-  const [sleep, setSleep] = useState(7.5)
-  const [stress, setStress] = useState(3)
-  const [isSmoker, setIsSmoker] = useState(false)
-  const [isMeds, setIsMeds] = useState(true)
-  const [timeline, setTimeline] = useState('1M')
+  const { 
+    patient, analysis, mode, setMode, 
+    simulation, setSimulation, 
+    simulationParams: sp, setSimulationParams: setSp,
+    setLoading, loadingSimulate 
+  } = usePatientStore()
+
+  const [cal, setCal] = useState(sp?.cal ?? 1800)
+  const [carb, setCarb] = useState(sp?.carb ?? 180)
+  const [sodium, setSodium] = useState(sp?.sodium ?? 1500)
+  const [exercise, setExercise] = useState(sp?.exercise ?? 4)
+  const [sleep, setSleep] = useState(sp?.sleep ?? 7.5)
+  const [stress, setStress] = useState(sp?.stress ?? 3)
+  const [isSmoker, setIsSmoker] = useState(sp?.isSmoker ?? false)
+  const [isMeds, setIsMeds] = useState(sp?.isMeds ?? true)
+  const [timeline, setTimeline] = useState(sp?.timeline ?? '1M')
   const [isSimulating, setIsSimulating] = useState(false)
 
-  const { patient, analysis, mode, setMode, setSimulation, setLoading, loadingSimulate } = usePatientStore()
   const { t } = useTranslation()
 
-  const [simAlt, setSimAlt] = useState(40)
-  const [simHematocrit, setSimHematocrit] = useState(45)
-  const [simCompounds, setSimCompounds] = useState<Compound[]>([])
-  const [isPct, setIsPct] = useState(false)
+  const [simAlt, setSimAlt] = useState(sp?.simAlt ?? 40)
+  const [simHematocrit, setSimHematocrit] = useState(sp?.simHematocrit ?? 45)
+  const [simCompounds, setSimCompounds] = useState<Compound[]>(sp?.simCompounds ?? [])
+  const [isPct, setIsPct] = useState(sp?.isPct ?? false)
+
+  // Sync back to store on change
+  useEffect(() => {
+    setSp({ 
+      cal, carb, sodium, exercise, sleep, stress, isSmoker, isMeds, timeline,
+      simAlt, simHematocrit, simCompounds, isPct 
+    })
+  }, [cal, carb, sodium, exercise, sleep, stress, isSmoker, isMeds, timeline, simAlt, simHematocrit, simCompounds, isPct, setSp])
 
   const baseline = useMemo(() => (analysis && patient) ? {
     vitals: {
@@ -176,9 +190,42 @@ export default function SimulatorPage() {
   const [sim, setSim] = useState(baseline || { vitals: { bp: '0/0', glucose: 0, hr: 0, bmi: 0 }, risks: { diabetes: 0, cardiac: 0, hypertension: 0, cardiovascular: 0, hepatotoxicity: 0, endocrine_suppression: 0, hematological: 0 }, score: 0 })
   const [narrative, setNarrative] = useState<string | null>(null)
 
+  // Initialize from simulation in store if available
   useEffect(() => {
-    if (baseline) setSim(baseline)
-  }, [baseline])
+    if (simulation) {
+      const pRisk = simulation.projected_risks
+      if (mode === 'athlete') {
+        setSim({
+          vitals: baseline?.vitals || { bp: '0/0', glucose: 0, hr: 0, bmi: 0 },
+          risks: { 
+            cardiovascular: getScore(pRisk.cardiovascular), 
+            hepatotoxicity: getScore(pRisk.hepatotoxicity), 
+            endocrine_suppression: getScore(pRisk.endocrine_suppression),
+            hematological: getScore(pRisk.hematological)
+          } as any,
+          score: Math.round(pRisk.overall_score || baseline?.score || 0)
+        })
+      } else {
+        setSim({
+          vitals: { 
+            bp: `${Math.round(pRisk.systolic_bp || 120)}/${Math.round(pRisk.diastolic_bp || 80)}`, 
+            glucose: Math.round(pRisk.glucose || 100), 
+            hr: 72, 
+            bmi: baseline?.vitals.bmi || 0 
+          },
+          risks: { 
+            diabetes: getScore(pRisk.diabetes), 
+            cardiac: getScore(pRisk.cardiac), 
+            hypertension: getScore(pRisk.hypertension) 
+          } as any,
+          score: Math.round(pRisk.overall_score || (baseline?.score || 0) + 5)
+        })
+      }
+      setNarrative(simulation.narrative)
+    } else if (baseline) {
+      setSim(baseline)
+    }
+  }, [baseline, simulation, mode])
 
   useEffect(() => {
     if (patient && !mode) {

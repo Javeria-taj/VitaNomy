@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type {
   AnyPatientInput, AnalyzeResponse, SimulateResponse,
-  ChatMessage, PlatformMode, ExtractResponse
+  ChatMessage, PlatformMode, ExtractResponse, Compound
 } from '@/types/patient'
 
 interface PatientStore {
@@ -31,7 +31,9 @@ interface PatientStore {
 
   // simulation
   simulation: SimulateResponse | null
-  setSimulation: (s: SimulateResponse) => void
+  setSimulation: (s: SimulateResponse | null) => void
+  simulationParams: SimulationParams | null
+  setSimulationParams: (p: Partial<SimulationParams>) => void
 
   // chat
   chatHistory: ChatMessage[]
@@ -57,6 +59,23 @@ interface PatientStore {
   setLanguage: (l: 'en' | 'hi' | 'ta' | 'te') => void
 }
 
+export interface SimulationParams {
+  cal: number
+  carb: number
+  sodium: number
+  exercise: number
+  sleep: number
+  stress: number
+  isSmoker: boolean
+  isMeds: boolean
+  timeline: string
+  // Athlete specific
+  simAlt?: number
+  simHematocrit?: number
+  simCompounds?: Compound[]
+  isPct?: boolean
+}
+
 export const usePatientStore = create<PatientStore>()(
   persist(
     (set) => ({
@@ -69,6 +88,7 @@ export const usePatientStore = create<PatientStore>()(
       extractResult: null,
       analysis: null,
       simulation: null,
+      simulationParams: null,
       chatHistory: [],
       loadingExtract: false,
       loadingAnalyze: false,
@@ -86,6 +106,12 @@ export const usePatientStore = create<PatientStore>()(
       setExtractResult: (extractResult) => set({ extractResult }),
       setAnalysis: (analysis) => set({ analysis }),
       setSimulation: (simulation) => set({ simulation }),
+      setSimulationParams: (params) => set((s) => ({
+        simulationParams: s.simulationParams ? { ...s.simulationParams, ...params } : {
+           cal: 1800, carb: 180, sodium: 1500, exercise: 4, sleep: 7.5, stress: 3, isSmoker: false, isMeds: true, timeline: '1M',
+           ...params
+        }
+      })),
       addChatMessage: (m) => set((s) => ({ chatHistory: [...s.chatHistory, m] })),
       clearChat: () => set({ chatHistory: [] }),
       setLoading: (key, v) => set((s) => {
@@ -104,6 +130,7 @@ export const usePatientStore = create<PatientStore>()(
         extractResult: null,
         analysis: null,
         simulation: null,
+        simulationParams: null,
         chatHistory: [],
         loadingExtract: false,
         loadingAnalyze: false,

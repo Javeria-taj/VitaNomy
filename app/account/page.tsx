@@ -7,6 +7,7 @@ import { usePatientStore } from '@/store/patientStore'
 import { useTranslation } from '@/hooks/useTranslation'
 import { Topbar } from '@/components/Layout/Topbar'
 import { TypoAvatar } from '@/components/Common/TypoAvatar'
+import { Download } from 'lucide-react'
 
 // ─── Clinical Neobrutalist Color Tokens ───────────────────────────────────────
 const C = {
@@ -443,7 +444,22 @@ export default function AccountPage() {
                 {activeTab === 'reports' && (
                   <div>
                     <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="application/pdf" className="hidden" />
-                    <PanelHeader title="PDF Health Reports" sub="Shareable AI-generated clinical documents" action={{ label: '+ Scan/Upload New PDF', primary: true }} onClick={handleFileSelect} />
+                    <div className="flex justify-between items-start pb-5 mb-6 border-b-[4px] border-black">
+                      <div>
+                        <h2 className="text-[20px] font-black uppercase tracking-tight text-ink mb-1">PDF Health Reports</h2>
+                        <p className="text-[12px] font-bold text-mu">Shareable AI-generated clinical documents</p>
+                      </div>
+                      <div className="flex gap-3">
+                        <button onClick={() => window.print()}
+                          className="px-5 py-2.5 border-[3px] border-black bg-white text-black font-black uppercase text-[11px] transition-all hover:translate-x-0.5 hover:translate-y-0.5 shadow-[4px_4px_0px_#000] flex items-center gap-2">
+                          <Download className="w-3 h-3" /> Export Clinical Dossier
+                        </button>
+                        <button onClick={handleFileSelect}
+                          className="px-5 py-2.5 border-[3px] border-black bg-green text-white font-black uppercase text-[11px] transition-all hover:translate-x-0.5 hover:translate-y-0.5 shadow-[4px_4px_0px_#000]">
+                          + Scan/Upload New PDF
+                        </button>
+                      </div>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-6">
                       <div className="border-[4px] border-black p-5 flex flex-col shadow-[6px_6px_0px_#000] cursor-pointer"
@@ -582,6 +598,63 @@ export default function AccountPage() {
           </div>
         </div>
       </main>
+      {/* --- Clinical Report (Print Only) --- */}
+      <div className="print-only clinical-report" style={{ backgroundColor: 'white', color: 'black' }}>
+        <div className="border-[10px] border-black p-10">
+          <div className="flex justify-between items-start border-b-[5px] border-black pb-8 mb-10">
+            <div>
+              <h1 className="text-[60px] font-black uppercase tracking-tighter leading-none mb-2">Clinical Dossier</h1>
+              <p className="text-[14px] font-black uppercase tracking-[0.4em] opacity-40">VitaNomy Digital Twin Report · V1.4</p>
+            </div>
+            <div className="text-right">
+              <div className="text-[24px] font-black uppercase">CONFIDENTIAL</div>
+              <div className="text-[14px] font-bold text-black">DATE: {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-10 mb-10">
+            <div className="p-6 border-[4px] border-black bg-[#F8F5EE]">
+              <h2 className="text-[18px] font-black uppercase mb-4 border-b-[2px] border-black pb-2 text-black">Patient Profile</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between"><span className="font-black opacity-40 uppercase text-[10px]">Name</span><span className="font-bold text-black">{p.name}</span></div>
+                <div className="flex justify-between"><span className="font-black opacity-40 uppercase text-[10px]">Age / Gender</span><span className="font-bold text-black">{p.age} yr / {p.gender}</span></div>
+                <div className="flex justify-between"><span className="font-black opacity-40 uppercase text-[10px]">BMI</span><span className="font-bold text-black">{bmi} kg/m²</span></div>
+              </div>
+            </div>
+            <div className="p-6 border-[4px] border-black bg-[#F7EDD0]">
+               <h2 className="text-[18px] font-black uppercase mb-4 border-b-[2px] border-black pb-2 text-black">Risk Stratification</h2>
+               <div className="space-y-3">
+                {['cardiac', 'diabetes', 'hypertension'].map(k => {
+                  const score = typeof (a.risk_scores as any)[k] === 'number' ? (a.risk_scores as any)[k] : ((a.risk_scores as any)[k]?.score || 0)
+                  return (
+                    <div key={k} className="flex justify-between items-center">
+                      <span className="font-black opacity-40 uppercase text-[10px]">{k}</span>
+                      <span className="font-black text-[20px]" style={{ color: score > 60 ? '#C0392B' : score > 30 ? '#C9A84C' : '#1B5E3B' }}>{score}%</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-10 text-black">
+            <h2 className="text-[18px] font-black uppercase mb-4 border-b-[3px] border-black pb-2 text-black">Clinical Intelligence Summary</h2>
+            <div className="space-y-4">
+              {(a.insights || []).slice(0, 3).map((ins, i) => (
+                <div key={i} className="flex gap-4 p-4 border-[2px] border-black bg-white">
+                  <div className="w-2 h-2 mt-1.5 bg-black" />
+                  <p className="text-[14px] leading-relaxed italic text-black">{ins}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-8 border-[4px] border-black bg-black text-white text-center mt-20">
+            <p className="text-[12px] font-black uppercase tracking-[0.2em] mb-2 opacity-50">Authorized Clinical Copy · Do not distribute</p>
+            <p className="text-[14px] font-bold italic opacity-80">"Synchronizing human physiology with clinical intelligence for high-fidelity longevity."</p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

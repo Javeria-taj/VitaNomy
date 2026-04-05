@@ -149,7 +149,11 @@ const getScore = (val: any): number => typeof val === 'number' ? val : (val?.sco
 
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { patient, analysis, simulation, setMode } = usePatientStore()
+  const { 
+    patient, analysis, simulation, setMode, 
+    setPatient, setAnalysis, setLoading, 
+    loadingAnalyze, loadingExtract 
+  } = usePatientStore()
   const { t } = useTranslation()
   const [view, setView] = useState<'input' | 'results' | 'history'>('results')
   const [history, setHistory] = useState<any[]>([])
@@ -161,6 +165,64 @@ export default function DashboardPage() {
   const p = patient
   const a = analysis
   const s = simulation
+
+  const reAnalyze = async () => {
+    if (!p) return
+    setLoading('analyze', true)
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patient: p })
+      })
+      if (!res.ok) throw new Error('Analysis failed')
+      const data = await res.json()
+      setAnalysis(data)
+      setExtractNotice({ msg: 'Twin recalibrated successfully', type: 'high' })
+      setTimeout(() => setExtractNotice(null), 3000)
+    } catch (err) {
+      console.error(err)
+      setExtractNotice({ msg: 'Calibration failed. Check inputs.', type: 'low' })
+    } finally {
+      setLoading('analyze', false)
+    }
+  }
+
+  const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !p) return
+
+    setExtracting(true)
+    setExtractNotice({ msg: 'Processing clinical document...', type: 'medium' })
+    
+    try {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1]
+        const res = await fetch('/api/extract', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pdf_base64: base64,
+            mode: p.mode || 'patient'
+          })
+        })
+
+        if (!res.ok) throw new Error('Extraction failed')
+        const data = await res.json()
+        
+        // Update local twin with extracted data
+        setPatient({ ...p, ...data.extracted_fields })
+        setExtractNotice({ msg: 'Data extracted. Review & re-analyze.', type: 'high' })
+      }
+      reader.readAsDataURL(file)
+    } catch (err) {
+      console.error(err)
+      setExtractNotice({ msg: 'Extraction failed. Try again.', type: 'low' })
+    } finally {
+      setExtracting(false)
+    }
+  }
 
   const isProjected = !!s
   const rs = s ? s.projected_risks : a?.risk_scores
@@ -206,7 +268,7 @@ export default function DashboardPage() {
     )
   }
 
-  const bmi = (p.weight / ((p.height / 100) ** 2)).toFixed(1)
+  const bmi = p.height > 0 ? (p.weight / ((p.height / 100) ** 2)).toFixed(1) : '—'
   const initials = p.name ? p.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'AM'
 
   const getStatus = (s: number) => s > 70 ? 'HIGH RISK' : s > 40 ? 'MODERATE' : 'LOW RISK'
@@ -315,7 +377,7 @@ export default function DashboardPage() {
               <div className="flex-1 flex items-center justify-center w-full">
                 <BodySVGInput age={p.age || 0} systolic={Number(p.systolic_bp) || 0}
                   diastolic={Number(p.diastolic_bp) || 0} cholesterol={Number(p.cholesterol_total) || 0}
-                  glucose={p.glucose || 0} bmi={bmiCalc} />
+                  glucose={p.glucose || 0} bmi={bmi} />
               </div>
             </div>
 
