@@ -78,6 +78,66 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  const p = patient
+  const bmi = p ? (p.weight / ((p.height / 100) ** 2)).toFixed(1) : '0'
+
+  const combinedChat: ChatMessage[] = chatHistory.length > 0 ? chatHistory : (p ? [
+    {
+      role: 'assistant',
+      content: `Hello, ${p.name?.split(' ')[0] || 'Patient'}. I've localized your clinical twin. Your **glucose of ${p.glucose} mg/dL** and **BP of ${p.systolic_bp}/${p.diastolic_bp}** are our primary focus. How can I help you optimize these today?`,
+      qr: ['Why is my glucose elevated?', 'How to lower my BP?', 'Run a risk simulation'],
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  ] : [])
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+  }, [combinedChat])
+
+  const handleSend = async (text?: string) => {
+    const messageText = text || input.trim()
+    if (!messageText || loadingChat || !p || !analysis) return
+
+    const userMsg: ChatMessage = { 
+      role: 'user', 
+      content: messageText,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+    addChatMessage(userMsg)
+    setInput('')
+    
+    setLoading('chat', true)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patient: p,
+          analysis: analysis,
+          history: chatHistory.slice(-10),
+          message: messageText
+        })
+      })
+
+      if (!res.ok) throw new Error('Dr. Vita is currently unavailable.')
+
+      const data = await res.json()
+      addChatMessage({
+        role: 'assistant',
+        content: data.reply || 'I could not process that. Please try again.',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      })
+    } catch (err: any) {
+      addChatMessage({
+        role: 'assistant',
+        content: 'Connection issue. Please try again.',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      })
+    } finally {
+      setLoading('chat', false)
+    }
+  }
+
   if (!patient || !analysis) {
     return (
       <div className="h-screen w-screen flex flex-col" style={{ backgroundColor: C.beige, color: C.black, fontFamily: "'Inter', sans-serif" }}>
@@ -98,67 +158,6 @@ export default function ChatPage() {
         </div>
       </div>
     )
-  }
-
-  const p = patient
-  const bmi = (p.weight / ((p.height / 100) ** 2)).toFixed(1)
-
-  const combinedChat: ChatMessage[] = chatHistory.length > 0 ? chatHistory : [
-    {
-      role: 'assistant',
-      content: `Hello, ${p.name?.split(' ')[0] || 'Patient'}. I've localized your clinical twin. Your **glucose of ${p.glucose} mg/dL** and **BP of ${p.systolic_bp}/${p.diastolic_bp}** are our primary focus. How can I help you optimize these today?`,
-      qr: ['Why is my glucose elevated?', 'How to lower my BP?', 'Run a risk simulation'],
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  ]
-
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-  }, [combinedChat])
-
-  const handleSend = async () => {
-    if (!input.trim() || loadingChat) return
-    const userMsg = input.trim()
-    
-    const userChatMessage: ChatMessage = { 
-      role: 'user', 
-      content: userMsg,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-    addChatMessage(userChatMessage)
-    setInput('')
-    
-    setLoading('chat', true)
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patient: p,
-          analysis: analysis,
-          message: userMsg,
-          history: chatHistory
-        })
-      })
-
-      if (!res.ok) {
-        throw new Error('Dr. Vita is currently unavailable. Please try again.')
-      }
-
-      const data = await res.json()
-      addChatMessage({
-        ...data.message,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      })
-    } catch (err: any) {
-      addChatMessage({
-        role: 'assistant',
-        content: `⚠ Error: ${err.message || 'Connection lost.'}`,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      })
-    } finally {
-      setLoading('chat', false)
-    }
   }
 
   return (
@@ -300,7 +299,7 @@ export default function ChatPage() {
                         {m.qr && (
                           <div className="flex flex-wrap gap-2.5 mt-5">
                             {m.qr.map((q: string) => (
-                              <button key={q} onClick={() => setInput(q)}
+                              <button key={q} onClick={() => handleSend(q)}
                                 className="px-3 py-2 border-[2.5px] border-black text-[11px] font-black uppercase transition-all text-left leading-tight bg-beige text-black shadow-[3px_3px_0px_#000] hover:bg-darkGreen hover:text-white hover:shadow-[1px_1px_0px_#000]">
                                 {q}
                               </button>
@@ -355,7 +354,8 @@ export default function ChatPage() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
                       placeholder={t.chat.inputPlaceholder}
-                      className="w-full bg-transparent p-4 pb-4 pr-24 text-[15px] font-bold focus:outline-none resize-none align-bottom h-full"
+                      disabled={loadingChat}
+                      className="w-full bg-transparent p-4 pb-4 pr-24 text-[15px] font-bold focus:outline-none resize-none align-bottom h-full disabled:opacity-30"
                       rows={1}
                     />
                     <div className="absolute right-3 bottom-3 flex gap-2">
@@ -366,7 +366,7 @@ export default function ChatPage() {
               </div>
               
               <button 
-                onClick={handleSend}
+                onClick={() => handleSend()}
                 disabled={loadingChat || !input.trim()}
                 className="h-[72px] px-8 border-[4px] border-black flex items-center justify-center transition-all group shrink-0 mt-auto disabled:opacity-50"
                 style={{ backgroundColor: C.electricYellow, boxShadow: '6px 6px 0px #000' }}
@@ -435,7 +435,7 @@ export default function ChatPage() {
               {[
                 'Diet for pre-diabetes', 'Exercise plan', 'Reduce BP naturally', 'Medication side effects', 'Sleep & blood sugar', 'Interpret my HbA1c'
               ].map(q => (
-                <button key={q} onClick={() => setInput(q)}
+                <button key={q} onClick={() => handleSend(q)}
                   className="px-3 py-1.5 border-[2.5px] border-black text-[11px] font-black uppercase transition-all text-left bg-white text-black shadow-[2.5px_2.5px_0px_#000] hover:bg-darkGreen hover:text-white">
                   {q}
                 </button>

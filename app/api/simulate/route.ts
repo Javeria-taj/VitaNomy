@@ -74,8 +74,14 @@ export async function POST(req: NextRequest) {
       : ['cardiovascular', 'hepatotoxicity', 'endocrine_suppression', 'hematological'];
 
     risksToCompare.forEach(key => {
-      // @ts-ignore (safe property access on RiskFactor)
-      delta[key] = projected_risks[key].score - original_risks[key].score;
+      const pRisk = (projected_risks as any)[key];
+      const oRisk = (original_risks as any)[key];
+      
+      if (pRisk && oRisk && typeof pRisk.score === 'number' && typeof oRisk.score === 'number') {
+        delta[key] = pRisk.score - oRisk.score;
+      } else {
+        delta[key] = 0;
+      }
     });
 
     const timeframes: Record<string, string> = {
