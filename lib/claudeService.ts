@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { 
-  AnyPatientInput, 
-  AnyRiskScores, 
-  AnalyzeResponse, 
+import {
+  AnyPatientInput,
+  AnyRiskScores,
+  AnalyzeResponse,
   ChatMessage,
   PatientInput,
   AthleteInput,
@@ -14,7 +14,7 @@ const genAI = new GoogleGenerativeAI(
   process.env.GEMINI_API_KEY || ''
 );
 
-const MODEL_NAME = 'gemini-2.0-flash';
+const MODEL_NAME = 'gemini-3-pro-preview';
 
 export const FALLBACK_PATIENT_INSIGHTS = {
   insights: [
@@ -293,9 +293,9 @@ Guidelines:
 5. Never prescribe. Always emphasize regular bloodwork monitoring.`;
     }
 
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: MODEL_NAME,
-      systemInstruction: systemPrompt 
+      systemInstruction: systemPrompt
     });
 
     const chat = model.startChat({
