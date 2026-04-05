@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "VitaNomy — AI Health Digital Twin",
   description: "VitaNomy builds a real-time AI digital twin of you — tracking diabetes, cardiac risk, and hypertension — then simulates how your choices change your future health.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  }
 };
 
 export default function RootLayout({

@@ -47,7 +47,7 @@ Omit any key not found. No markdown, no backticks.`;
               media_type: 'application/pdf',
               data: pdf_base64
             }
-          },
+          } as any,
           {
             type: 'text',
             text: prompt
@@ -91,10 +91,4 @@ Omit any key not found. No markdown, no backticks.`;
   }
 }
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
+export const maxDuration = 60
