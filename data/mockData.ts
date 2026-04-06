@@ -242,3 +242,77 @@ export const MOCK_SIMULATION: SimulateResponse = {
 
 // Legacy alias
 export const DEMO_PATIENT_ANALYSIS = MOCK_ANALYSIS
+
+
+export const TARUN_CASE: AthleteInput = {
+  mode: 'athlete',
+  name: 'Arjun Mehta',        // fictional name, real scenario
+  age: 32,
+  gender: 'male',
+  weight: 108,
+  height: 182,
+  body_fat_percent: 8,
+  // Bloodwork — looks "mostly normal" on standard panel
+  // This is the whole point — a doctor sees this and says fine
+  systolic_bp: 138,
+  diastolic_bp: 88,
+  glucose: 96,
+  cholesterol_total: 198,     // ✓ under 200 — "normal"
+  cholesterol_hdl: 32,        // ← suppressed but easy to miss
+  cholesterol_ldl: 142,
+  triglycerides: 168,
+  // The values a standard GP panel often MISSES or doesn't order
+  hematocrit: 52,             // ← elevated, easy to dismiss
+  hemoglobin: 17.8,           // ← high normal, looks "athletic"
+  rbc: 6.2,                   // ← mildly elevated
+  alt: 62,                    // ← above normal but "not alarming"
+  ast: 48,                    // ← above normal but "not alarming"
+  // Kidney — the silent killer in this story
+  creatinine: 1.6,            // ← THIS is the flag a standard
+  //    panel shows but doctors
+  //    attribute to muscle mass
+  //    VitaNomy flags it differently
+  //    in context of compound use
+  // Endocrine — suppressed but bloodwork "looks normal"
+  testosterone_total: 1820,   // ← supraphysiological
+  testosterone_free: 41,
+  estradiol: 58,              // ← elevated, often ignored
+  lh: 0.3,                   // ← near zero — full shutdown
+  fsh: 0.6,                  // ← near zero — full shutdown
+  // The compound log — what standard bloodwork never sees
+  compounds: [
+    {
+      name: 'Testosterone Enanthate',
+      compound_type: 'anabolic_steroid',
+      dose_mg: 600,
+      frequency: 'twice_weekly',
+      route: 'injectable',
+      cycle_week_current: 14,
+      cycle_week_total: 12,   // ← EXCEEDED — engine flags this
+      is_pct: false
+    },
+    {
+      name: 'Trenbolone Acetate',
+      compound_type: 'anabolic_steroid',
+      dose_mg: 300,
+      frequency: 'eod',
+      route: 'injectable',
+      cycle_week_current: 14,
+      cycle_week_total: 8,    // ← EXCEEDED by 6 weeks
+      is_pct: false
+    },
+    {
+      name: 'Anavar',
+      compound_type: 'anabolic_steroid',
+      dose_mg: 60,
+      frequency: 'daily',
+      route: 'oral',
+      cycle_week_current: 10,
+      cycle_week_total: 6,    // ← EXCEEDED — hepatic stress
+      is_pct: false
+    }
+  ],
+  training_years: 8,
+  competition_prep: true,
+  pct_active: false           // ← no PCT active — engine flags
+}
